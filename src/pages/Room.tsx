@@ -276,88 +276,92 @@ const RoomPage = () => {
 
     // Get document content
     const doc = documents.find(d => d.id === selectedDoc);
-    if (!doc) {
+    if (!doc || !doc.content) {
       toast({
         title: 'Document not found',
+        description: 'Please select a valid document with content.',
         variant: 'destructive',
       });
       setIsGenerating(false);
       return;
     }
 
-    // Create quiz
-    const { data: quiz, error: quizError } = await supabase
-      .from('quizzes')
-      .insert({
-        room_id: roomId,
-        document_id: selectedDoc,
-        title: quizTitle.trim(),
-        difficulty: quizDifficulty,
-        created_by: user.id,
-      })
-      .select()
-      .single();
-
-    if (quizError) {
+    try {
+      // Call AI to generate questions
       toast({
-        title: 'Failed to create quiz',
-        description: quizError.message,
+        title: 'Generating quiz...',
+        description: 'AI is creating questions from your document.',
+      });
+
+      const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-quiz', {
+        body: {
+          content: doc.content,
+          difficulty: quizDifficulty,
+          questionCount: 5,
+        },
+      });
+
+      if (aiError) {
+        throw new Error(aiError.message || 'Failed to generate questions');
+      }
+
+      if (!aiData?.questions || aiData.questions.length === 0) {
+        throw new Error(aiData?.error || 'No questions generated');
+      }
+
+      // Create quiz
+      const { data: quiz, error: quizError } = await supabase
+        .from('quizzes')
+        .insert({
+          room_id: roomId,
+          document_id: selectedDoc,
+          title: quizTitle.trim(),
+          difficulty: quizDifficulty,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (quizError) {
+        throw new Error(quizError.message);
+      }
+
+      // Insert questions
+      const questionsToInsert = aiData.questions.map((q: any, index: number) => ({
+        quiz_id: quiz.id,
+        question_text: q.question,
+        question_type: q.type,
+        options: q.options,
+        correct_answer: q.correct,
+        order_index: index,
+      }));
+
+      const { error: insertError } = await supabase.from('questions').insert(questionsToInsert);
+      
+      if (insertError) {
+        // Clean up the quiz if questions failed to insert
+        await supabase.from('quizzes').delete().eq('id', quiz.id);
+        throw new Error('Failed to save questions');
+      }
+
+      toast({
+        title: 'Quiz generated!',
+        description: `Created ${aiData.questions.length} AI-powered questions.`,
+      });
+
+      setQuizTitle('');
+      setSelectedDoc('');
+      fetchRoomData();
+    } catch (error) {
+      console.error('Quiz generation error:', error);
+      toast({
+        title: 'Quiz generation failed',
+        description: error instanceof Error ? error.message : 'Please try again.',
         variant: 'destructive',
       });
+    } finally {
       setIsGenerating(false);
-      return;
     }
-
-    // Generate sample questions (in production, this would call an AI API)
-    const sampleQuestions = generateSampleQuestions(doc.content || '', quizDifficulty);
-
-    // Insert questions
-    const questionsToInsert = sampleQuestions.map((q, index) => ({
-      quiz_id: quiz.id,
-      question_text: q.question,
-      question_type: q.type,
-      options: q.options,
-      correct_answer: q.correct,
-      order_index: index,
-    }));
-
-    await supabase.from('questions').insert(questionsToInsert);
-
-    toast({
-      title: 'Quiz generated!',
-      description: `Created ${sampleQuestions.length} questions.`,
-    });
-
-    setQuizTitle('');
-    setSelectedDoc('');
-    setIsGenerating(false);
-    fetchRoomData();
-  };
-
-  const generateSampleQuestions = (content: string, difficulty: string) => {
-    // This is a placeholder - in production, this would call an AI API
-    const questions = [
-      {
-        question: `Based on the document, what is the main topic discussed?`,
-        type: 'multiple_choice',
-        options: JSON.stringify(['Option A', 'Option B', 'Option C', 'Option D']),
-        correct: 'Option A',
-      },
-      {
-        question: `True or False: The document covers advanced concepts.`,
-        type: 'true_false',
-        options: JSON.stringify(['True', 'False']),
-        correct: 'True',
-      },
-      {
-        question: `Which concept is NOT mentioned in the document?`,
-        type: 'multiple_choice',
-        options: JSON.stringify(['Concept 1', 'Concept 2', 'Concept 3', 'Concept 4']),
-        correct: 'Concept 4',
-      },
-    ];
-
-    return questions;
   };
 
   const getModeColor = (mode: string) => {
