@@ -113,11 +113,12 @@ const QuizPage = () => {
 
     if (attemptData) {
       setAttempt(attemptData as QuizAttempt);
+      const savedAnswers = (attemptData.answers as Record<string, string>) || {};
       if (attemptData.status === 'completed') {
         setShowResults(true);
-        setAnswers(attemptData.answers || {});
+        setAnswers(savedAnswers);
       } else if (attemptData.status === 'in_progress') {
-        setAnswers(attemptData.answers || {});
+        setAnswers(savedAnswers);
       }
     }
 
