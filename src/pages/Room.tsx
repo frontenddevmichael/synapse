@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -9,7 +9,10 @@ import {
   Users,
   Settings,
   Copy,
-  Check
+  Check,
+  File,
+  Loader2,
+  X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { extractTextFromPDF, formatFileSize } from '@/lib/pdfParser';
 
 interface Room {
   id: string;
@@ -81,11 +85,17 @@ interface LeaderboardEntry {
   quizzes_taken: number;
 }
 
+interface UserPreferences {
+  preferred_difficulty: 'easy' | 'medium' | 'hard';
+  default_time_limit: number;
+}
+
 const RoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [room, setRoom] = useState<Room | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -95,11 +105,17 @@ const RoomPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   
+  // User preferences
+  const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
+  
   // Document upload
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [docName, setDocName] = useState('');
   const [docContent, setDocContent] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadMode, setUploadMode] = useState<'paste' | 'file'>('paste');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isParsing, setIsParsing] = useState(false);
   
   // Quiz generation
   const [isGenerating, setIsGenerating] = useState(false);
@@ -114,8 +130,24 @@ const RoomPage = () => {
     }
     if (roomId) {
       fetchRoomData();
+      fetchUserPreferences();
     }
   }, [user, roomId, navigate]);
+
+  const fetchUserPreferences = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('user_preferences')
+      .select('preferred_difficulty, default_time_limit')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (data) {
+      setUserPreferences(data as UserPreferences);
+      setQuizDifficulty(data.preferred_difficulty as 'easy' | 'medium' | 'hard');
+    }
+  };
 
   const fetchRoomData = async () => {
     if (!roomId || !user) return;
@@ -237,6 +269,56 @@ const RoomPage = () => {
     }
   };
 
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    
+    // Auto-fill document name from file name
+    if (!docName) {
+      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+      setDocName(nameWithoutExt);
+    }
+
+    // Parse file content
+    setIsParsing(true);
+    try {
+      let content = '';
+      
+      if (file.type === 'application/pdf') {
+        content = await extractTextFromPDF(file);
+      } else {
+        // For text files, read directly
+        content = await file.text();
+      }
+
+      setDocContent(content);
+      toast({
+        title: 'File parsed successfully',
+        description: `Extracted ${content.length.toLocaleString()} characters`,
+      });
+    } catch (error) {
+      console.error('File parsing error:', error);
+      toast({
+        title: 'Failed to parse file',
+        description: error instanceof Error ? error.message : 'Please try a different file',
+        variant: 'destructive',
+      });
+      setSelectedFile(null);
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
+  const clearSelectedFile = () => {
+    setSelectedFile(null);
+    setDocContent('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleUploadDocument = async () => {
     if (!user || !roomId || !docName.trim() || !docContent.trim()) return;
 
@@ -262,6 +344,8 @@ const RoomPage = () => {
       });
       setDocName('');
       setDocContent('');
+      setSelectedFile(null);
+      setUploadMode('paste');
       setIsUploadOpen(false);
       fetchRoomData();
     }
@@ -309,7 +393,9 @@ const RoomPage = () => {
         throw new Error(aiData?.error || 'No questions generated');
       }
 
-      // Create quiz
+      // Create quiz with time limit based on user preferences for challenge/exam modes
+      const timeLimit = room?.mode !== 'study' ? (userPreferences?.default_time_limit || null) : null;
+      
       const { data: quiz, error: quizError } = await supabase
         .from('quizzes')
         .insert({
@@ -317,6 +403,7 @@ const RoomPage = () => {
           document_id: selectedDoc,
           title: quizTitle.trim(),
           difficulty: quizDifficulty,
+          time_limit_minutes: timeLimit,
           created_by: user.id,
         })
         .select()
@@ -333,6 +420,7 @@ const RoomPage = () => {
         question_type: q.type,
         options: q.options,
         correct_answer: q.correct,
+        explanation: q.explanation || null,
         order_index: index,
       }));
 
@@ -437,14 +525,34 @@ const RoomPage = () => {
                     Upload Document
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-lg">
                   <DialogHeader>
                     <DialogTitle>Upload Document</DialogTitle>
                     <DialogDescription>
-                      Paste your study material to generate quizzes
+                      Upload a PDF or paste your study material to generate quizzes
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 pt-4">
+                    {/* Upload mode toggle */}
+                    <div className="flex gap-2">
+                      <Button
+                        variant={uploadMode === 'paste' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setUploadMode('paste')}
+                        className="flex-1"
+                      >
+                        Paste Text
+                      </Button>
+                      <Button
+                        variant={uploadMode === 'file' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setUploadMode('file')}
+                        className="flex-1"
+                      >
+                        Upload File
+                      </Button>
+                    </div>
+
                     <div className="space-y-2">
                       <Label>Document name</Label>
                       <Input
@@ -453,20 +561,79 @@ const RoomPage = () => {
                         onChange={(e) => setDocName(e.target.value)}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Content</Label>
-                      <Textarea
-                        placeholder="Paste your study material here..."
-                        value={docContent}
-                        onChange={(e) => setDocContent(e.target.value)}
-                        rows={10}
-                      />
-                    </div>
+
+                    {uploadMode === 'paste' ? (
+                      <div className="space-y-2">
+                        <Label>Content</Label>
+                        <Textarea
+                          placeholder="Paste your study material here..."
+                          value={docContent}
+                          onChange={(e) => setDocContent(e.target.value)}
+                          rows={10}
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label>File</Label>
+                        {!selectedFile ? (
+                          <div
+                            className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            <File className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+                            <p className="text-sm font-medium">Click to upload a file</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              PDF, TXT, or MD files supported
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="border border-border rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <FileText className="h-8 w-8 text-primary" />
+                                <div>
+                                  <p className="font-medium text-sm">{selectedFile.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {formatFileSize(selectedFile.size)}
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={clearSelectedFile}
+                                disabled={isParsing}
+                              >
+                                {isParsing ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <X className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                            {docContent && (
+                              <p className="text-xs text-muted-foreground mt-2">
+                                ✓ Extracted {docContent.length.toLocaleString()} characters
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".pdf,.txt,.md"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                        />
+                      </div>
+                    )}
+
                     <Button 
                       className="w-full" 
                       onClick={handleUploadDocument}
-                      disabled={isUploading || !docName.trim() || !docContent.trim()}
+                      disabled={isUploading || isParsing || !docName.trim() || !docContent.trim()}
                     >
+                      {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Upload Document
                     </Button>
                   </div>
@@ -553,7 +720,11 @@ const RoomPage = () => {
                         onClick={handleGenerateQuiz}
                         disabled={isGenerating || !selectedDoc || !quizTitle.trim()}
                       >
-                        <Sparkles className="h-4 w-4" />
+                        {isGenerating ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4" />
+                        )}
                         Generate
                       </Button>
                     </div>
