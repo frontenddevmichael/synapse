@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { extractTextFromPDF, formatFileSize } from '@/lib/pdfParser';
+import { QuestionCountSelector } from '@/components/quiz/QuestionCountSelector';
 
 interface Room {
   id: string;
@@ -122,6 +123,7 @@ const RoomPage = () => {
   const [selectedDoc, setSelectedDoc] = useState<string>('');
   const [quizTitle, setQuizTitle] = useState('');
   const [quizDifficulty, setQuizDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  const [questionCount, setQuestionCount] = useState(10);
 
   useEffect(() => {
     if (!user) {
@@ -381,7 +383,7 @@ const RoomPage = () => {
         body: {
           content: doc.content,
           difficulty: quizDifficulty,
-          questionCount: 5,
+          questionCount: questionCount,
         },
       });
 
@@ -677,7 +679,7 @@ const RoomPage = () => {
                   <CardDescription>Create a quiz from your uploaded documents</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     <div className="space-y-2">
                       <Label>Document</Label>
                       <Select value={selectedDoc} onValueChange={setSelectedDoc}>
@@ -713,6 +715,14 @@ const RoomPage = () => {
                           <SelectItem value="hard">Hard</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <QuestionCountSelector
+                        value={questionCount}
+                        onChange={setQuestionCount}
+                        min={5}
+                        max={25}
+                      />
                     </div>
                     <div className="flex items-end">
                       <Button 
