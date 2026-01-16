@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users, BookOpen, Trophy, LogOut, Settings } from 'lucide-react';
+import { Plus, Users, BookOpen, Trophy, LogOut, Settings, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Logo } from '@/components/Logo';
@@ -24,8 +24,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { useGamification } from '@/hooks/useGamification';
+import { XpProgress } from '@/components/gamification/XpProgress';
+import { StreakBadge } from '@/components/gamification/StreakBadge';
+import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
+import { AchievementToast } from '@/components/gamification/AchievementToast';
 
 interface Room {
   id: string;
@@ -40,6 +46,7 @@ const Dashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { stats, newAchievement, clearNewAchievement, getXpProgress } = useGamification();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -48,6 +55,8 @@ const Dashboard = () => {
   const [newRoomMode, setNewRoomMode] = useState<'study' | 'challenge' | 'exam'>('study');
   const [joinCode, setJoinCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const xpProgress = getXpProgress();
 
   useEffect(() => {
     if (!user) {
@@ -254,10 +263,31 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* Achievement Toast */}
+      {newAchievement && (
+        <AchievementToast
+          name={newAchievement.name}
+          description={newAchievement.description}
+          icon={newAchievement.icon}
+          xpReward={newAchievement.xp_reward}
+          onClose={clearNewAchievement}
+        />
+      )}
+
       {/* Header */}
       <header className="flex items-center justify-between p-4 border-b border-border">
         <Logo />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {stats && (
+            <XpProgress
+              level={stats.level}
+              currentXp={xpProgress.current}
+              maxXp={xpProgress.max}
+              percentage={xpProgress.percentage}
+              compact
+            />
+          )}
+          {stats && <StreakBadge days={stats.streak_days} />}
           <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={() => navigate('/preferences')}>
             <Settings className="h-4 w-4" />
@@ -278,8 +308,21 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Quick actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <Tabs defaultValue="rooms" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="rooms" className="gap-2">
+              <Users className="h-4 w-4" />
+              Rooms
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="rooms" className="space-y-6">
+            {/* Quick actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Card className="cursor-pointer hover:border-primary/50 transition-colors">
@@ -396,57 +439,63 @@ const Dashboard = () => {
                 </Button>
               </div>
             </DialogContent>
-          </Dialog>
-        </div>
+        </Dialog>
+            </div>
 
-        {/* Rooms list */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Your Rooms</h2>
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader>
-                    <div className="h-5 bg-muted rounded w-3/4"></div>
-                    <div className="h-4 bg-muted rounded w-1/2"></div>
-                  </CardHeader>
+            {/* Rooms list */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Your Rooms</h2>
+              {isLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i} className="animate-pulse">
+                      <CardHeader>
+                        <div className="h-5 bg-muted rounded w-3/4"></div>
+                        <div className="h-4 bg-muted rounded w-1/2"></div>
+                      </CardHeader>
+                    </Card>
+                  ))}
+                </div>
+              ) : rooms.length === 0 ? (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                    <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="font-semibold mb-2">No rooms yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Create your first room or join one with a code
+                    </p>
+                  </CardContent>
                 </Card>
-              ))}
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {rooms.map((room) => (
+                    <Card 
+                      key={room.id} 
+                      className="cursor-pointer hover:border-primary/50 transition-colors"
+                      onClick={() => navigate(`/room/${room.id}`)}
+                    >
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">{room.name}</CardTitle>
+                          <Badge variant="outline" className={getModeColor(room.mode)}>
+                            {room.mode}
+                          </Badge>
+                        </div>
+                        <CardDescription className="font-mono">
+                          Code: {room.code}
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
-          ) : rooms.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="font-semibold mb-2">No rooms yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Create your first room or join one with a code
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {rooms.map((room) => (
-                <Card 
-                  key={room.id} 
-                  className="cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={() => navigate(`/room/${room.id}`)}
-                >
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{room.name}</CardTitle>
-                      <Badge variant="outline" className={getModeColor(room.mode)}>
-                        {room.mode}
-                      </Badge>
-                    </div>
-                    <CardDescription className="font-mono">
-                      Code: {room.code}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <AnalyticsDashboard />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
