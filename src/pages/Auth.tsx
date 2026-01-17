@@ -16,21 +16,21 @@ import { useToast } from '@/hooks/use-toast';
 const signUpSchema = z.object({
   username: z
     .string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(20, 'Username must be at most 20 characters')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
-  email: z.string().email('Please enter a valid email address'),
+    .min(3, 'At least 3 characters')
+    .max(20, 'At most 20 characters')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Letters, numbers, and underscores only'),
+  email: z.string().email('Enter a valid email'),
   password: z
     .string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
+    .min(8, 'At least 8 characters')
+    .regex(/[A-Z]/, 'Include an uppercase letter')
+    .regex(/[a-z]/, 'Include a lowercase letter')
+    .regex(/[0-9]/, 'Include a number'),
 });
 
 const signInSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(1, 'Password required'),
 });
 
 type SignUpFormData = z.infer<typeof signUpSchema>;
@@ -52,19 +52,12 @@ const Auth = () => {
 
   const signUpForm = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: {
-      username: '',
-      email: '',
-      password: '',
-    },
+    defaultValues: { username: '', email: '', password: '' },
   });
 
   const signInForm = useForm<SignInFormData>({
     resolver: zodResolver(signInSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
+    defaultValues: { email: '', password: '' },
   });
 
   const handleSignUp = async (data: SignUpFormData) => {
@@ -73,23 +66,14 @@ const Auth = () => {
     setIsLoading(false);
 
     if (error) {
-      let message = 'An error occurred during sign up';
-      if (error.message.includes('already registered')) {
-        message = 'This email is already registered. Please sign in instead.';
-      } else if (error.message.includes('invalid')) {
-        message = 'Please check your email and password.';
-      } else {
-        message = error.message;
-      }
-      toast({
-        title: 'Sign up failed',
-        description: message,
-        variant: 'destructive',
-      });
+      const message = error.message.includes('already registered')
+        ? 'This email is already registered.'
+        : error.message;
+      toast({ title: 'Sign up failed', description: message, variant: 'destructive' });
     } else {
       toast({
         title: 'Check your email',
-        description: 'We sent you a confirmation link to complete your registration.',
+        description: 'We sent a confirmation link.',
       });
     }
   };
@@ -100,96 +84,92 @@ const Auth = () => {
     setIsLoading(false);
 
     if (error) {
-      let message = 'An error occurred during sign in';
-      if (error.message.includes('Invalid login credentials')) {
-        message = 'Invalid email or password. Please try again.';
-      } else if (error.message.includes('Email not confirmed')) {
-        message = 'Please confirm your email before signing in.';
-      } else {
-        message = error.message;
-      }
-      toast({
-        title: 'Sign in failed',
-        description: message,
-        variant: 'destructive',
-      });
+      const message = error.message.includes('Invalid login credentials')
+        ? 'Invalid email or password.'
+        : error.message.includes('Email not confirmed')
+        ? 'Please confirm your email first.'
+        : error.message;
+      toast({ title: 'Sign in failed', description: message, variant: 'destructive' });
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-border">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border">
         <Logo />
         <ThemeToggle />
       </header>
 
-      {/* Main content */}
-      <main className="flex-1 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md animate-scale-in">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">
-              {isSignUp ? 'Create your account' : 'Welcome back'}
+      {/* Main */}
+      <main className="flex-1 flex items-center justify-center p-6">
+        <Card className="w-full max-w-sm animate-scale-in">
+          <CardHeader className="text-center pb-2">
+            <CardTitle className="text-2xl font-semibold">
+              {isSignUp ? 'Create account' : 'Welcome back'}
             </CardTitle>
             <CardDescription>
               {isSignUp
-                ? 'Join Synapse and start learning collaboratively'
-                : 'Sign in to continue your learning journey'}
+                ? 'Start studying with your group'
+                : 'Sign in to continue'}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             {isSignUp ? (
               <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="username">Username</Label>
                   <Input
                     id="username"
-                    placeholder="johndoe"
+                    placeholder="your_username"
+                    autoComplete="username"
                     {...signUpForm.register('username')}
                   />
                   {signUpForm.formState.errors.username && (
-                    <p className="text-sm text-destructive">
+                    <p className="text-xs text-destructive">
                       {signUpForm.formState.errors.username.message}
                     </p>
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="john@example.com"
+                    placeholder="you@example.com"
+                    autoComplete="email"
                     {...signUpForm.register('email')}
                   />
                   {signUpForm.formState.errors.email && (
-                    <p className="text-sm text-destructive">
+                    <p className="text-xs text-destructive">
                       {signUpForm.formState.errors.email.message}
                     </p>
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="password">Password</Label>
                   <div className="relative">
                     <Input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••"
+                      autoComplete="new-password"
                       {...signUpForm.register('password')}
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-0 top-0 h-full px-3"
+                      className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
                   {signUpForm.formState.errors.password && (
-                    <p className="text-sm text-destructive">
+                    <p className="text-xs text-destructive">
                       {signUpForm.formState.errors.password.message}
                     </p>
                   )}
@@ -202,42 +182,44 @@ const Auth = () => {
               </form>
             ) : (
               <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-4">
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="john@example.com"
+                    placeholder="you@example.com"
+                    autoComplete="email"
                     {...signInForm.register('email')}
                   />
                   {signInForm.formState.errors.email && (
-                    <p className="text-sm text-destructive">
+                    <p className="text-xs text-destructive">
                       {signInForm.formState.errors.email.message}
                     </p>
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="password">Password</Label>
                   <div className="relative">
                     <Input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••"
+                      autoComplete="current-password"
                       {...signInForm.register('password')}
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-0 top-0 h-full px-3"
+                      className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
                   {signInForm.formState.errors.password && (
-                    <p className="text-sm text-destructive">
+                    <p className="text-xs text-destructive">
                       {signInForm.formState.errors.password.message}
                     </p>
                   )}
@@ -253,24 +235,24 @@ const Auth = () => {
             <div className="mt-6 text-center text-sm">
               {isSignUp ? (
                 <p className="text-muted-foreground">
-                  Already have an account?{' '}
+                  Have an account?{' '}
                   <button
                     type="button"
                     onClick={() => setIsSignUp(false)}
-                    className="text-primary hover:underline font-medium"
+                    className="text-foreground font-medium hover:underline underline-offset-4"
                   >
                     Sign in
                   </button>
                 </p>
               ) : (
                 <p className="text-muted-foreground">
-                  Don't have an account?{' '}
+                  New here?{' '}
                   <button
                     type="button"
                     onClick={() => setIsSignUp(true)}
-                    className="text-primary hover:underline font-medium"
+                    className="text-foreground font-medium hover:underline underline-offset-4"
                   >
-                    Sign up
+                    Create account
                   </button>
                 </p>
               )}
@@ -280,8 +262,8 @@ const Auth = () => {
       </main>
 
       {/* Footer */}
-      <footer className="p-4 text-center text-sm text-muted-foreground border-t border-border">
-        <p>© 2024 Synapse. Learn together, grow together.</p>
+      <footer className="py-4 text-center text-sm text-muted-foreground border-t border-border">
+        <p>© {new Date().getFullYear()} Synapse</p>
       </footer>
     </div>
   );
