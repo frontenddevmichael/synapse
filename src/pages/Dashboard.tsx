@@ -68,47 +68,29 @@ const Dashboard = () => {
 
   const fetchRooms = async () => {
     if (!user) return;
-
     setIsLoading(true);
     
-    // Fetch rooms where user is a member
-    const { data: memberRooms, error: memberError } = await supabase
+    const { data: memberRooms } = await supabase
       .from('room_members')
       .select('room_id')
       .eq('user_id', user.id);
 
-    if (memberError) {
-      console.error('Error fetching member rooms:', memberError);
-      setIsLoading(false);
-      return;
-    }
-
     const roomIds = memberRooms?.map(m => m.room_id) || [];
 
-    // Fetch rooms where user is owner
-    const { data: ownedRooms, error: ownedError } = await supabase
+    const { data: ownedRooms } = await supabase
       .from('rooms')
       .select('*')
       .eq('owner_id', user.id);
 
-    if (ownedError) {
-      console.error('Error fetching owned rooms:', ownedError);
-    }
-
-    // Fetch rooms where user is member
     let joinedRooms: Room[] = [];
     if (roomIds.length > 0) {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('rooms')
         .select('*')
         .in('id', roomIds);
-      
-      if (!error && data) {
-        joinedRooms = data as Room[];
-      }
+      if (data) joinedRooms = data as Room[];
     }
 
-    // Combine and deduplicate
     const allRooms = [...(ownedRooms || []), ...joinedRooms];
     const uniqueRooms = allRooms.filter((room, index, self) => 
       index === self.findIndex(r => r.id === room.id)
@@ -120,54 +102,28 @@ const Dashboard = () => {
 
   const generateRoomCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-      code += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return code;
+    return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
   };
 
   const handleCreateRoom = async () => {
     if (!user || !newRoomName.trim()) return;
-
     setIsSubmitting(true);
 
     const code = generateRoomCode();
-
-    // Create the room
     const { data: room, error: roomError } = await supabase
       .from('rooms')
-      .insert({
-        name: newRoomName.trim(),
-        code,
-        mode: newRoomMode,
-        owner_id: user.id,
-      })
+      .insert({ name: newRoomName.trim(), code, mode: newRoomMode, owner_id: user.id })
       .select()
       .single();
 
     if (roomError) {
-      toast({
-        title: 'Failed to create room',
-        description: roomError.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Could not create room', description: roomError.message, variant: 'destructive' });
       setIsSubmitting(false);
       return;
     }
 
-    // Add owner as room member
-    await supabase.from('room_members').insert({
-      room_id: room.id,
-      user_id: user.id,
-      role: 'owner',
-    });
-
-    toast({
-      title: 'Room created!',
-      description: `Your room code is: ${code}`,
-    });
-
+    await supabase.from('room_members').insert({ room_id: room.id, user_id: user.id, role: 'owner' });
+    toast({ title: 'Room created', description: `Code: ${code}` });
     setNewRoomName('');
     setNewRoomMode('study');
     setIsCreateOpen(false);
@@ -177,27 +133,20 @@ const Dashboard = () => {
 
   const handleJoinRoom = async () => {
     if (!user || !joinCode.trim()) return;
-
     setIsSubmitting(true);
 
-    // Find room by code
-    const { data: room, error: findError } = await supabase
+    const { data: room } = await supabase
       .from('rooms')
       .select('*')
       .eq('code', joinCode.trim().toUpperCase())
       .maybeSingle();
 
-    if (findError || !room) {
-      toast({
-        title: 'Room not found',
-        description: 'Please check the room code and try again.',
-        variant: 'destructive',
-      });
+    if (!room) {
+      toast({ title: 'Room not found', description: 'Check the code and try again.', variant: 'destructive' });
       setIsSubmitting(false);
       return;
     }
 
-    // Check if already a member
     const { data: existingMember } = await supabase
       .from('room_members')
       .select('id')
@@ -206,37 +155,14 @@ const Dashboard = () => {
       .maybeSingle();
 
     if (existingMember) {
-      toast({
-        title: 'Already a member',
-        description: 'You are already a member of this room.',
-      });
+      toast({ title: 'Already a member', description: 'You\'re in this room already.' });
       setIsSubmitting(false);
       setIsJoinOpen(false);
       return;
     }
 
-    // Join the room
-    const { error: joinError } = await supabase.from('room_members').insert({
-      room_id: room.id,
-      user_id: user.id,
-      role: 'member',
-    });
-
-    if (joinError) {
-      toast({
-        title: 'Failed to join room',
-        description: joinError.message,
-        variant: 'destructive',
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
-    toast({
-      title: 'Joined room!',
-      description: `Welcome to ${room.name}`,
-    });
-
+    await supabase.from('room_members').insert({ room_id: room.id, user_id: user.id, role: 'member' });
+    toast({ title: 'Joined room', description: room.name });
     setJoinCode('');
     setIsJoinOpen(false);
     setIsSubmitting(false);
@@ -248,22 +174,17 @@ const Dashboard = () => {
     navigate('/auth');
   };
 
-  const getModeColor = (mode: string) => {
-    switch (mode) {
-      case 'study':
-        return 'bg-success/10 text-success border-success/20';
-      case 'challenge':
-        return 'bg-warning/10 text-warning border-warning/20';
-      case 'exam':
-        return 'bg-destructive/10 text-destructive border-destructive/20';
-      default:
-        return 'bg-muted text-muted-foreground';
-    }
+  const getModeStyles = (mode: string) => {
+    const styles: Record<string, string> = {
+      study: 'bg-success/10 text-success border-success/20',
+      challenge: 'bg-warning/10 text-warning border-warning/20',
+      exam: 'bg-destructive/10 text-destructive border-destructive/20',
+    };
+    return styles[mode] || 'bg-muted text-muted-foreground';
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Achievement Toast */}
       {newAchievement && (
         <AchievementToast
           name={newAchievement.name}
@@ -275,7 +196,7 @@ const Dashboard = () => {
       )}
 
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-border">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border">
         <Logo />
         <div className="flex items-center gap-3">
           {stats && (
@@ -298,13 +219,12 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="flex-1 container max-w-6xl py-8">
-        {/* Welcome section */}
+      {/* Main */}
+      <main className="flex-1 container max-w-5xl py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome back!</h1>
+          <h1 className="text-2xl font-semibold mb-1">Your rooms</h1>
           <p className="text-muted-foreground">
-            Ready to learn? Create or join a room to get started.
+            Create or join a room to start studying
           </p>
         </div>
 
@@ -316,173 +236,156 @@ const Dashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="analytics" className="gap-2">
               <BarChart3 className="h-4 w-4" />
-              Analytics
+              Progress
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="rooms" className="space-y-6">
-            {/* Quick actions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Card className="cursor-pointer hover:border-primary/50 transition-colors">
-                <CardContent className="flex items-center gap-4 p-6">
-                  <div className="p-3 rounded-full bg-primary/10">
-                    <Plus className="h-6 w-6 text-primary" />
+            {/* Actions */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                <DialogTrigger asChild>
+                  <Card className="cursor-pointer card-interactive">
+                    <CardContent className="flex items-center gap-4 p-5">
+                      <div className="p-2.5 rounded-lg bg-primary/10">
+                        <Plus className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Create room</h3>
+                        <p className="text-sm text-muted-foreground">Start a new study group</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create room</DialogTitle>
+                    <DialogDescription>Set up a space for your study group</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="roomName">Name</Label>
+                      <Input
+                        id="roomName"
+                        placeholder="e.g., Biology 101"
+                        value={newRoomName}
+                        onChange={(e) => setNewRoomName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="roomMode">Mode</Label>
+                      <Select value={newRoomMode} onValueChange={(v) => setNewRoomMode(v as 'study' | 'challenge' | 'exam')}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="study">
+                            <div className="flex items-center gap-2">
+                              <BookOpen className="h-4 w-4" />
+                              Study — answers shown immediately
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="challenge">
+                            <div className="flex items-center gap-2">
+                              <Trophy className="h-4 w-4" />
+                              Challenge — timed, with leaderboard
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="exam">
+                            <div className="flex items-center gap-2">
+                              <Settings className="h-4 w-4" />
+                              Exam — one attempt, hidden answers
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button className="w-full" onClick={handleCreateRoom} disabled={isSubmitting || !newRoomName.trim()}>
+                      Create room
+                    </Button>
                   </div>
-                  <div>
-                    <h3 className="font-semibold">Create Room</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Start a new study room
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create a new room</DialogTitle>
-                <DialogDescription>
-                  Set up a room for your study group
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="roomName">Room name</Label>
-                  <Input
-                    id="roomName"
-                    placeholder="e.g., Biology 101 Study Group"
-                    value={newRoomName}
-                    onChange={(e) => setNewRoomName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="roomMode">Room mode</Label>
-                  <Select value={newRoomMode} onValueChange={(v) => setNewRoomMode(v as any)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="study">
-                        <div className="flex items-center gap-2">
-                          <BookOpen className="h-4 w-4" />
-                          Study - Answers shown, relaxed pace
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="challenge">
-                        <div className="flex items-center gap-2">
-                          <Trophy className="h-4 w-4" />
-                          Challenge - Timed, competitive
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="exam">
-                        <div className="flex items-center gap-2">
-                          <Settings className="h-4 w-4" />
-                          Exam - Answers hidden until done
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button 
-                  className="w-full" 
-                  onClick={handleCreateRoom}
-                  disabled={isSubmitting || !newRoomName.trim()}
-                >
-                  Create Room
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+                </DialogContent>
+              </Dialog>
 
-          <Dialog open={isJoinOpen} onOpenChange={setIsJoinOpen}>
-            <DialogTrigger asChild>
-              <Card className="cursor-pointer hover:border-primary/50 transition-colors">
-                <CardContent className="flex items-center gap-4 p-6">
-                  <div className="p-3 rounded-full bg-accent/10">
-                    <Users className="h-6 w-6 text-accent" />
+              <Dialog open={isJoinOpen} onOpenChange={setIsJoinOpen}>
+                <DialogTrigger asChild>
+                  <Card className="cursor-pointer card-interactive">
+                    <CardContent className="flex items-center gap-4 p-5">
+                      <div className="p-2.5 rounded-lg bg-accent/10">
+                        <Users className="h-5 w-5 text-accent" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Join room</h3>
+                        <p className="text-sm text-muted-foreground">Enter a 6-letter code</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Join room</DialogTitle>
+                    <DialogDescription>Enter the room code from your group</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="joinCode">Room code</Label>
+                      <Input
+                        id="joinCode"
+                        placeholder="ABC123"
+                        value={joinCode}
+                        onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                        maxLength={6}
+                        className="text-center text-xl tracking-widest font-mono"
+                      />
+                    </div>
+                    <Button className="w-full" onClick={handleJoinRoom} disabled={isSubmitting || joinCode.length !== 6}>
+                      Join room
+                    </Button>
                   </div>
-                  <div>
-                    <h3 className="font-semibold">Join Room</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Enter a room code
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Join a room</DialogTitle>
-                <DialogDescription>
-                  Enter the 6-character room code
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="joinCode">Room code</Label>
-                  <Input
-                    id="joinCode"
-                    placeholder="e.g., ABC123"
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                    maxLength={6}
-                    className="text-center text-2xl tracking-widest font-mono"
-                  />
-                </div>
-                <Button 
-                  className="w-full" 
-                  onClick={handleJoinRoom}
-                  disabled={isSubmitting || joinCode.length !== 6}
-                >
-                  Join Room
-                </Button>
-              </div>
-            </DialogContent>
-        </Dialog>
+                </DialogContent>
+              </Dialog>
             </div>
 
-            {/* Rooms list */}
+            {/* Room list */}
             <div>
-              <h2 className="text-xl font-semibold mb-4">Your Rooms</h2>
               {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[1, 2, 3].map((i) => (
                     <Card key={i} className="animate-pulse">
                       <CardHeader>
-                        <div className="h-5 bg-muted rounded w-3/4"></div>
+                        <div className="h-5 bg-muted rounded w-3/4 mb-2"></div>
                         <div className="h-4 bg-muted rounded w-1/2"></div>
                       </CardHeader>
                     </Card>
                   ))}
                 </div>
               ) : rooms.length === 0 ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                    <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="font-semibold mb-2">No rooms yet</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Create your first room or join one with a code
+                <Card className="py-12">
+                  <CardContent className="flex flex-col items-center text-center">
+                    <Users className="h-10 w-10 text-muted-foreground mb-4" />
+                    <h3 className="font-medium mb-1">No rooms yet</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Create a room or join one with a code
                     </p>
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {rooms.map((room) => (
                     <Card 
                       key={room.id} 
-                      className="cursor-pointer hover:border-primary/50 transition-colors"
+                      className="cursor-pointer card-interactive"
                       onClick={() => navigate(`/room/${room.id}`)}
                     >
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">{room.name}</CardTitle>
-                          <Badge variant="outline" className={getModeColor(room.mode)}>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <CardTitle className="text-base font-medium">{room.name}</CardTitle>
+                          <Badge variant="outline" className={getModeStyles(room.mode)}>
                             {room.mode}
                           </Badge>
                         </div>
-                        <CardDescription className="font-mono">
-                          Code: {room.code}
+                        <CardDescription className="font-mono text-xs">
+                          {room.code}
                         </CardDescription>
                       </CardHeader>
                     </Card>
