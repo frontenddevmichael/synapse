@@ -1,73 +1,176 @@
-# Welcome to your Lovable project
+# Synapse
 
-## Project info
+**Synapse** is a room-based collaborative learning platform that helps small groups study more effectively by turning shared documents into AI-generated quizzes. It is designed for focus, structure, and correctness — not social feeds, not content discovery, and not noise.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## What Synapse Is
 
-There are several ways of editing your application.
+* A **collaborative learning tool**, not a social network
+* A **room-first system** with clear ownership and enforced rules
+* A **quiz-driven learning workflow** powered by AI
+* A **Progressive Web App (PWA)** built for modern browsers and devices
 
-**Use Lovable**
+Users create or join rooms, upload study materials, generate quizzes, and take them individually or competitively depending on the room’s configuration.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Core Features
 
-**Use your preferred IDE**
+### Authentication
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+* Email and password sign-up / login
+* Unique usernames
+* Secure session persistence via Supabase Auth
+* Light and dark mode support
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+### Rooms
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+* Create rooms and invite others using unique room codes
+* Clear owner role with control over room settings
+* Automatic member management
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+**Room Modes**
 
-# Step 3: Install the necessary dependencies.
-npm i
+| Mode      | Description                                                    |
+| --------- | -------------------------------------------------------------- |
+| Study     | Answers visible, leaderboard optional                          |
+| Challenge | Timed quizzes, leaderboard enabled                             |
+| Exam      | Timed quizzes, answers hidden until completion, no leaderboard |
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+Room rules are enforced at both the backend and frontend level.
+
+---
+
+### Documents → AI Quizzes
+
+* Upload PDFs or paste raw text
+* Documents stored in Supabase Storage
+* AI converts content into structured quizzes
+* Supported question types:
+
+  * Multiple choice
+  * True / False
+* Difficulty levels: easy, medium, hard
+
+---
+
+### Quiz Experience
+
+* One question displayed at a time
+* Optional time limits
+* Single attempt per user per quiz (soft enforced)
+* Clear progress indicators and completion feedback
+
+**Quiz lifecycle:**
+Not Started → In Progress → Completed
+
+---
+
+### Leaderboards
+
+* Per-room leaderboards
+* Ranked by quiz score
+* Enabled or disabled by room owner
+* Automatically updated after quiz completion
+* Visibility depends on room mode
+
+---
+
+### User Preferences
+
+Each user can set persistent preferences:
+
+* Default quiz difficulty
+* Preferred time limits
+* Answer reveal behavior
+
+User preferences apply automatically but **never override room-level rules**.
+
+---
+
+## Tech Stack
+
+### Frontend
+
+* Vanilla HTML, CSS, and JavaScript (ES Modules)
+* Modular component and style architecture
+* Responsive and accessible UI
+* Subtle, intentional animations (150–200ms)
+
+### Backend
+
+* Supabase Auth
+* Supabase Postgres
+* Supabase Storage
+
+### AI
+
+* First-party AI integration (OpenAI / Groq compatible)
+* Deterministic, schema-based quiz generation
+
+### PWA
+
+* Installable on desktop and mobile
+* Offline-ready application shell
+* Cached access to previously synced rooms and quizzes
+
+---
+
+## Data Model (Supabase)
+
+Core tables:
+
+* Users
+* Rooms
+* RoomMembers
+* Documents
+* Quizzes
+* Questions
+* QuizAttempts
+* UserPreferences
+
+All relationships are normalized and enforced with foreign keys.
+
+---
+
+## Project Structure
+
+```
+/frontend
+  /components
+  /styles
+  /utils
+/backend
+  supabase-scripts.sql
+/manifest.json
+/service-worker.js
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Local Development
 
-**Use GitHub Codespaces**
+1. Create a Supabase project
+2. Run the SQL schema in `backend/supabase-scripts.sql`
+3. Configure Supabase keys in the frontend
+4. Serve the frontend using a local static server
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## Product Principles
 
-This project is built with:
+* Focus over feature bloat
+* Explicit rules over implicit behavior
+* Correctness and reliability over speed
+* Calm, human-centered UX
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Synapse is intentionally constrained. Every feature exists to support structured, room-based learning — nothing more.
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## License
 
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+MIT
