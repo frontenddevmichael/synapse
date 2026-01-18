@@ -304,6 +304,78 @@
     50% { transform: translateY(-10px) rotate(-3deg); }
   }
 
+  /* Streak pulse animation */
+  .streak-pulse {
+    animation: streakPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes streakPulse {
+    0%, 100% { 
+      transform: scale(1);
+      box-shadow: 0 0 0 0 currentColor;
+    }
+    50% { 
+      transform: scale(1.02);
+      box-shadow: 0 0 8px 2px currentColor;
+    }
+  }
+
+  /* Particle animation for fire effects */
+  .animate-particle {
+    animation: particle 1s ease-out infinite;
+  }
+
+  @keyframes particle {
+    0% {
+      transform: translateY(0) scale(1);
+      opacity: 0.8;
+    }
+    100% {
+      transform: translateY(-20px) scale(0);
+      opacity: 0;
+    }
+  }
+
+  /* Subtle bounce for icons */
+  .animate-bounce-subtle {
+    animation: bounceSlight 1s ease-in-out infinite;
+  }
+
+  @keyframes bounceSlight {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+  }
+
+  /* Legendary achievement glow */
+  .legendary-glow {
+    animation: legendaryGlow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes legendaryGlow {
+    0% { 
+      box-shadow: 0 0 10px 2px hsl(45 100% 50% / 0.3);
+    }
+    100% { 
+      box-shadow: 0 0 20px 6px hsl(45 100% 50% / 0.5);
+    }
+  }
+
+  /* Count up animation */
+  .animate-count-up {
+    animation: countUp 0.6s ease-out;
+  }
+
+  @keyframes countUp {
+    from { 
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   /* Text balance for headings */
   .text-balance {
     text-wrap: balance;
