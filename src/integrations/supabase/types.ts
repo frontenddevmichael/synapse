@@ -141,6 +141,53 @@ export type Database = {
           },
         ]
       }
+      daily_activity: {
+        Row: {
+          correct_answers: number | null
+          created_at: string | null
+          date: string
+          id: string
+          perfect_quizzes: number | null
+          quizzes_completed: number | null
+          total_answers: number | null
+          updated_at: string | null
+          user_id: string
+          xp_earned: number | null
+        }
+        Insert: {
+          correct_answers?: number | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          perfect_quizzes?: number | null
+          quizzes_completed?: number | null
+          total_answers?: number | null
+          updated_at?: string | null
+          user_id: string
+          xp_earned?: number | null
+        }
+        Update: {
+          correct_answers?: number | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          perfect_quizzes?: number | null
+          quizzes_completed?: number | null
+          total_answers?: number | null
+          updated_at?: string | null
+          user_id?: string
+          xp_earned?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_activity_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           content: string | null
@@ -189,48 +236,69 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          best_hot_streak: number | null
           created_at: string
+          daily_goal_completed: boolean | null
           display_name: string | null
+          hot_streak: number | null
           id: string
           last_activity_date: string | null
           level: number | null
+          perfect_scores: number | null
           streak_days: number | null
+          streak_freeze_available: boolean | null
+          streak_freeze_count: number | null
           total_correct_answers: number | null
           total_questions_answered: number | null
           total_quizzes_completed: number | null
           updated_at: string
           username: string
           xp: number | null
+          xp_multiplier: number | null
         }
         Insert: {
           avatar_url?: string | null
+          best_hot_streak?: number | null
           created_at?: string
+          daily_goal_completed?: boolean | null
           display_name?: string | null
+          hot_streak?: number | null
           id: string
           last_activity_date?: string | null
           level?: number | null
+          perfect_scores?: number | null
           streak_days?: number | null
+          streak_freeze_available?: boolean | null
+          streak_freeze_count?: number | null
           total_correct_answers?: number | null
           total_questions_answered?: number | null
           total_quizzes_completed?: number | null
           updated_at?: string
           username: string
           xp?: number | null
+          xp_multiplier?: number | null
         }
         Update: {
           avatar_url?: string | null
+          best_hot_streak?: number | null
           created_at?: string
+          daily_goal_completed?: boolean | null
           display_name?: string | null
+          hot_streak?: number | null
           id?: string
           last_activity_date?: string | null
           level?: number | null
+          perfect_scores?: number | null
           streak_days?: number | null
+          streak_freeze_available?: boolean | null
+          streak_freeze_count?: number | null
           total_correct_answers?: number | null
           total_questions_answered?: number | null
           total_quizzes_completed?: number | null
           updated_at?: string
           username?: string
           xp?: number | null
+          xp_multiplier?: number | null
         }
         Relationships: []
       }
