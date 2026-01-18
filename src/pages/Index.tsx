@@ -63,10 +63,7 @@ const Index = () => {
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             {/* Left: Copy */}
             <div className="animate-slide-up">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full bg-accent/10 border border-accent/20 text-accent text-sm font-medium">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>AI-powered quiz generation</span>
-              </div>
+        
               
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight mb-6 text-balance leading-[1.1]">
                 Your notes,
