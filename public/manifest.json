@@ -1,17 +1,95 @@
 {
-  "name": "Synapse",
+  "name": "Synapse — Collaborative Study Platform",
   "short_name": "Synapse",
-  "description": "AI-Powered Collaborative Learning Platform",
+  "description": "Turn your notes into quizzes. Study smarter with your group.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#fafbfc",
-  "theme_color": "#3b82f6",
+  "background_color": "#1a1f2e",
+  "theme_color": "#2d4a6f",
   "orientation": "portrait-primary",
+  "categories": ["education", "productivity"],
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64",
-      "type": "image/x-icon"
+      "src": "/icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/dashboard.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard view"
+    },
+    {
+      "src": "/screenshots/quiz.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Quiz view"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Create Room",
+      "short_name": "Create",
+      "description": "Create a new study room",
+      "url": "/dashboard?action=create",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Join Room",
+      "short_name": "Join",
+      "description": "Join an existing room",
+      "url": "/dashboard?action=join",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
 }
