@@ -8,11 +8,9 @@ import {
   BookOpen,
   Trophy,
   Timer,
-  Download,
   Check,
-  Smartphone,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { Logo } from '@/components/Logo';
@@ -20,43 +18,14 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
-
-/* -------------------------------------------------------------------------- */
-/*                                   Motion                                   */
-/* -------------------------------------------------------------------------- */
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 24, filter: 'blur(4px)' },
-  visible: {
-    opacity: 1,
-    y: 0,
-    filter: 'blur(0px)',
-    transition: {
-      duration: 0.6,
-      ease: [0.22, 1, 0.36, 1],
-    },
-  },
-};
-
-const stagger = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.12,
-    },
-  },
-};
-
-const viewport = { once: true, margin: '-120px' };
-
-/* -------------------------------------------------------------------------- */
+import { fadeUp, stagger, viewport, staggerSlow } from '@/lib/motion';
 
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { shouldShowPrompt } = usePWAInstall();
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!loading && user) navigate('/dashboard');
@@ -69,6 +38,15 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, [shouldShowPrompt]);
 
+  // Disable animations if user prefers reduced motion
+  const animationProps = prefersReducedMotion 
+    ? {} 
+    : { variants: stagger, initial: 'hidden', animate: 'visible' };
+  
+  const scrollAnimationProps = prefersReducedMotion
+    ? {}
+    : { variants: staggerSlow, initial: 'hidden', whileInView: 'visible', viewport };
+
   return (
     <div className="min-h-screen flex flex-col bg-background overflow-hidden">
       {/* Background */}
@@ -78,11 +56,11 @@ const Index = () => {
       </div>
 
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-background/80 backdrop-blur sticky top-0 z-50">
+      <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border/50 bg-background/80 backdrop-blur sticky top-0 z-50">
         <Logo />
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="hidden sm:inline-flex">
             Sign in
           </Button>
           <Button size="sm" onClick={() => navigate('/auth')}>
@@ -93,17 +71,15 @@ const Index = () => {
 
       {/* Hero */}
       <motion.section
-        variants={stagger}
-        initial="hidden"
-        animate="visible"
-        className="flex-1 flex items-center py-20 lg:py-32"
+        {...animationProps}
+        className="flex-1 flex items-center py-12 sm:py-20 lg:py-32"
       >
-        <div className="container max-w-6xl px-6">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <div className="container max-w-6xl px-4 sm:px-6">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             <motion.div variants={stagger}>
               <motion.h1
                 variants={fadeUp}
-                className="text-4xl sm:text-5xl lg:text-6xl font-semibold mb-6 leading-[1.1]"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold mb-4 sm:mb-6 leading-[1.1]"
               >
                 Your notes,
                 <br />
@@ -112,24 +88,24 @@ const Index = () => {
 
               <motion.p
                 variants={fadeUp}
-                className="text-lg text-muted-foreground mb-8 max-w-lg"
+                className="text-base sm:text-lg text-muted-foreground mb-6 sm:mb-8 max-w-lg"
               >
                 Upload your study materials. Synapse generates questions.
                 Quiz yourself or compete with your group.
               </motion.p>
 
-              <motion.div variants={fadeUp} className="flex gap-3">
-                <Button size="lg" onClick={() => navigate('/auth')} className="gap-2">
+              <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-3">
+                <Button size="lg" onClick={() => navigate('/auth')} className="gap-2 w-full sm:w-auto">
                   Start studying free <ArrowRight className="h-4 w-4" />
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => navigate('/auth')}>
+                <Button size="lg" variant="outline" onClick={() => navigate('/auth')} className="w-full sm:w-auto">
                   Join a room
                 </Button>
               </motion.div>
 
               <motion.div
                 variants={fadeUp}
-                className="flex gap-6 mt-10 pt-8 border-t border-border/50"
+                className="flex gap-6 mt-8 sm:mt-10 pt-6 sm:pt-8 border-t border-border/50"
               >
                 <QuickStat value="3" label="quiz modes" />
                 <QuickStat value="PDF" label="& text support" />
@@ -138,7 +114,7 @@ const Index = () => {
             </motion.div>
 
             {/* Mockup */}
-            <motion.div variants={fadeUp}>
+            <motion.div variants={fadeUp} className="hidden lg:block">
               <div className="bg-card rounded-2xl border shadow-xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -181,23 +157,20 @@ const Index = () => {
 
       {/* How it works */}
       <motion.section
-        variants={stagger}
-        initial="hidden"
-        whileInView="visible"
-        viewport={viewport}
-        className="py-24 border-t border-border bg-muted/30"
+        {...scrollAnimationProps}
+        className="py-16 sm:py-24 border-t border-border bg-muted/30"
       >
-        <div className="container max-w-5xl px-6">
-          <motion.div variants={fadeUp} className="text-center mb-16">
-            <h2 className="text-3xl font-semibold mb-4">
+        <div className="container max-w-5xl px-4 sm:px-6">
+          <motion.div variants={fadeUp} className="text-center mb-10 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl font-semibold mb-3 sm:mb-4">
               From notes to knowledge
             </h2>
-            <p className="text-muted-foreground max-w-lg mx-auto">
+            <p className="text-muted-foreground max-w-lg mx-auto text-sm sm:text-base">
               Three simple steps. No setup friction.
             </p>
           </motion.div>
 
-          <motion.div variants={stagger} className="grid md:grid-cols-3 gap-8">
+          <motion.div variants={stagger} className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             <ProcessCard icon={Users} title="Create or join" description="Private study rooms with shareable codes." />
             <ProcessCard icon={Upload} title="Upload materials" description="PDFs, notes, or pasted text." />
             <ProcessCard icon={Sparkles} title="Generate quizzes" description="AI-crafted questions from your content." />
@@ -207,48 +180,49 @@ const Index = () => {
 
       {/* Modes */}
       <motion.section
-        variants={stagger}
-        initial="hidden"
-        whileInView="visible"
-        viewport={viewport}
-        className="py-24 border-t border-border"
+        {...scrollAnimationProps}
+        className="py-16 sm:py-24 border-t border-border"
       >
-        <div className="container max-w-5xl px-6">
-          <motion.div variants={fadeUp} className="text-center mb-16">
-            <h2 className="text-3xl font-semibold mb-4">Three ways to study</h2>
-            <p className="text-muted-foreground">
+        <div className="container max-w-5xl px-4 sm:px-6">
+          <motion.div variants={fadeUp} className="text-center mb-10 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl font-semibold mb-3 sm:mb-4">Three ways to study</h2>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Choose what matches your learning style.
             </p>
           </motion.div>
 
-          <motion.div variants={stagger} className="grid md:grid-cols-3 gap-6">
-            <ModeCard icon={BookOpen} mode="Study" features={['Instant feedback']} />
-            <ModeCard icon={Trophy} mode="Challenge" featured features={['Leaderboards']} />
-            <ModeCard icon={Timer} mode="Exam" features={['One attempt']} />
+          <motion.div variants={stagger} className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+            <ModeCard icon={BookOpen} mode="Study" features={['Instant feedback', 'Learn at your pace']} />
+            <ModeCard icon={Trophy} mode="Challenge" featured features={['Leaderboards', 'Compete with friends']} />
+            <ModeCard icon={Timer} mode="Exam" features={['One attempt', 'Timed sessions']} />
           </motion.div>
         </div>
       </motion.section>
 
       {/* CTA */}
       <motion.section
-        variants={stagger}
-        initial="hidden"
-        whileInView="visible"
-        viewport={viewport}
-        className="py-20 border-t border-border text-center"
+        {...scrollAnimationProps}
+        className="py-16 sm:py-20 border-t border-border text-center px-4"
       >
-        <motion.h2 variants={fadeUp} className="text-3xl font-semibold mb-4">
+        <motion.h2 variants={fadeUp} className="text-2xl sm:text-3xl font-semibold mb-3 sm:mb-4">
           Ready to study smarter?
         </motion.h2>
-        <motion.p variants={fadeUp} className="text-muted-foreground mb-8">
+        <motion.p variants={fadeUp} className="text-muted-foreground mb-6 sm:mb-8 text-sm sm:text-base">
           Free to start. No credit card.
         </motion.p>
         <motion.div variants={fadeUp}>
-          <Button size="lg" onClick={() => navigate('/auth')} className="gap-2">
+          <Button size="lg" onClick={() => navigate('/auth')} className="gap-2 w-full sm:w-auto">
             Create your first room <ArrowRight className="h-4 w-4" />
           </Button>
         </motion.div>
       </motion.section>
+
+      {/* Footer */}
+      <footer className="py-6 border-t border-border text-center">
+        <p className="text-xs text-muted-foreground">
+          © {new Date().getFullYear()} Synapse. Built for students.
+        </p>
+      </footer>
 
       {showInstallBanner && (
         <InstallPrompt variant="banner" onClose={() => setShowInstallBanner(false)} />
@@ -257,11 +231,9 @@ const Index = () => {
   );
 };
 
-/* -------------------------------------------------------------------------- */
-
 const QuickStat = ({ value, label }: { value: string; label: string }) => (
   <div>
-    <div className="text-lg font-semibold">{value}</div>
+    <div className="text-base sm:text-lg font-semibold">{value}</div>
     <div className="text-xs text-muted-foreground">{label}</div>
   </div>
 );
@@ -279,13 +251,13 @@ const ProcessCard = ({
     variants={fadeUp}
     whileHover={{ y: -4 }}
     transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-    className="p-6 rounded-xl border bg-card hover:shadow-md"
+    className="p-5 sm:p-6 rounded-xl border bg-card hover:shadow-md transition-shadow"
   >
-    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-      <Icon className="h-6 w-6 text-primary" />
+    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3 sm:mb-4">
+      <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
     </div>
-    <h3 className="font-semibold mb-2">{title}</h3>
-    <p className="text-sm text-muted-foreground">{description}</p>
+    <h3 className="font-semibold mb-1.5 sm:mb-2 text-sm sm:text-base">{title}</h3>
+    <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
   </motion.div>
 );
 
@@ -303,18 +275,18 @@ const ModeCard = ({
   <motion.div
     variants={fadeUp}
     whileHover={{ scale: featured ? 1.03 : 1.01 }}
-    className={`p-6 rounded-xl border bg-card ${
-      featured ? 'border-warning/30 ring-1 ring-warning/10' : ''
+    className={`p-5 sm:p-6 rounded-xl border bg-card transition-shadow ${
+      featured ? 'border-warning/30 ring-1 ring-warning/10 shadow-lg' : 'hover:shadow-md'
     }`}
   >
-    <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center mb-4">
-      <Icon className="h-6 w-6" />
+    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-muted flex items-center justify-center mb-3 sm:mb-4">
+      <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
     </div>
-    <h3 className="font-semibold mb-3">{mode} mode</h3>
-    <ul className="space-y-2">
+    <h3 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">{mode} mode</h3>
+    <ul className="space-y-1.5 sm:space-y-2">
       {features.map((f) => (
-        <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Check className="h-4 w-4 text-success" />
+        <li key={f} className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+          <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-success flex-shrink-0" />
           {f}
         </li>
       ))}
