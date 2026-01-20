@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -12,26 +12,47 @@ declare global {
   }
 }
 
+export type Platform = 'ios' | 'android' | 'desktop' | 'unknown';
+
+function detectPlatform(): Platform {
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(userAgent) && !(window as any).MSStream;
+  const isAndroid = /android/.test(userAgent);
+  
+  if (isIOS) return 'ios';
+  if (isAndroid) return 'android';
+  if (/windows|macintosh|linux/.test(userAgent) && !/mobile/.test(userAgent)) return 'desktop';
+  return 'unknown';
+}
+
+function isIOSSafari(): boolean {
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(userAgent);
+  const isSafari = /safari/.test(userAgent) && !/crios|fxios|opios|mercury/.test(userAgent);
+  return isIOS && isSafari;
+}
+
 export function usePWAInstall() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const [platform, setPlatform] = useState<Platform>('unknown');
+  const [isIOSSafariBrowser, setIsIOSSafariBrowser] = useState(false);
+  const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
+    // Detect platform
+    setPlatform(detectPlatform());
+    setIsIOSSafariBrowser(isIOSSafari());
+
     // Check if already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     const isIOSStandalone = (window.navigator as any).standalone === true;
     setIsInstalled(isStandalone || isIOSStandalone);
 
-    // Check if iOS
-    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    setIsIOS(iOS);
-
     // Handle the beforeinstallprompt event
     const handleBeforeInstall = (e: BeforeInstallPromptEvent) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      deferredPromptRef.current = e;
       setIsInstallable(true);
     };
 
@@ -39,8 +60,7 @@ export function usePWAInstall() {
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setIsInstallable(false);
-      setDeferredPrompt(null);
-      // Store in localStorage
+      deferredPromptRef.current = null;
       localStorage.setItem('synapse-pwa-installed', 'true');
     };
 
@@ -54,24 +74,24 @@ export function usePWAInstall() {
   }, []);
 
   const promptInstall = useCallback(async () => {
-    if (!deferredPrompt) return false;
+    if (!deferredPromptRef.current) return false;
 
     try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+      await deferredPromptRef.current.prompt();
+      const { outcome } = await deferredPromptRef.current.userChoice;
       
       if (outcome === 'accepted') {
         setIsInstalled(true);
         setIsInstallable(false);
       }
       
-      setDeferredPrompt(null);
+      deferredPromptRef.current = null;
       return outcome === 'accepted';
     } catch (error) {
       console.error('PWA install error:', error);
       return false;
     }
-  }, [deferredPrompt]);
+  }, []);
 
   const dismissInstall = useCallback(() => {
     localStorage.setItem('synapse-pwa-dismissed', Date.now().toString());
@@ -82,7 +102,6 @@ export function usePWAInstall() {
     
     const dismissed = localStorage.getItem('synapse-pwa-dismissed');
     if (dismissed) {
-      // Don't show for 7 days after dismissal
       const dismissedTime = parseInt(dismissed, 10);
       const sevenDays = 7 * 24 * 60 * 60 * 1000;
       if (Date.now() - dismissedTime < sevenDays) {
@@ -90,13 +109,22 @@ export function usePWAInstall() {
       }
     }
     
-    return isInstallable || isIOS;
-  }, [isInstalled, isInstallable, isIOS]);
+    return isInstallable || platform === 'ios';
+  }, [isInstalled, isInstallable, platform]);
+
+  // Can show native install prompt (Chrome, Edge, etc.)
+  const canInstallNatively = isInstallable && deferredPromptRef.current !== null;
+  
+  // iOS requires manual instructions
+  const needsManualInstall = platform === 'ios' && !isInstalled;
 
   return {
-    isInstallable: isInstallable || isIOS,
+    isInstallable: isInstallable || platform === 'ios',
     isInstalled,
-    isIOS,
+    platform,
+    isIOSSafari: isIOSSafariBrowser,
+    canInstallNatively,
+    needsManualInstall,
     promptInstall,
     dismissInstall,
     shouldShowPrompt: shouldShowPrompt()

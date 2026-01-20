@@ -17,6 +17,8 @@ import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { InstallSection } from '@/components/pwa/InstallSection';
+import { InstallButton } from '@/components/pwa/InstallButton';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { fadeUp, stagger, viewport, staggerSlow } from '@/lib/motion';
 
@@ -59,6 +61,7 @@ const Index = () => {
       <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border/50 bg-background/80 backdrop-blur sticky top-0 z-50">
         <Logo />
         <div className="flex items-center gap-2">
+          <InstallButton className="hidden sm:inline-flex" />
           <ThemeToggle />
           <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="hidden sm:inline-flex">
             Sign in
@@ -216,6 +219,9 @@ const Index = () => {
           </Button>
         </motion.div>
       </motion.section>
+
+      {/* Install Section */}
+      <InstallSection />
 
       {/* Footer */}
       <footer className="py-6 border-t border-border text-center">

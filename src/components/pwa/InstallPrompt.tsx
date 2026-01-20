@@ -8,15 +8,21 @@ interface InstallPromptProps {
 }
 
 export function InstallPrompt({ variant = 'banner', onClose }: InstallPromptProps) {
-  const { isInstallable, isIOS, promptInstall, dismissInstall, shouldShowPrompt } = usePWAInstall();
+  const { 
+    canInstallNatively, 
+    needsManualInstall, 
+    platform,
+    promptInstall, 
+    dismissInstall, 
+    shouldShowPrompt 
+  } = usePWAInstall();
+
+  const isIOS = platform === 'ios';
 
   if (!shouldShowPrompt) return null;
 
   const handleInstall = async () => {
-    if (isIOS) {
-      // Can't programmatically install on iOS, just show instructions
-      return;
-    }
+    if (!canInstallNatively) return;
     const installed = await promptInstall();
     if (installed) {
       onClose?.();
@@ -42,7 +48,7 @@ export function InstallPrompt({ variant = 'banner', onClose }: InstallPromptProp
               : 'Access your rooms offline, faster loading'}
           </p>
         </div>
-        {!isIOS && (
+        {canInstallNatively && (
           <Button size="sm" onClick={handleInstall}>
             Install
           </Button>
@@ -78,7 +84,7 @@ export function InstallPrompt({ variant = 'banner', onClose }: InstallPromptProp
                 ? 'Add Synapse to your home screen for the best experience. Tap the share button, then "Add to Home Screen".' 
                 : 'Install Synapse for offline access, faster loading, and a native app experience.'}
             </p>
-            {!isIOS && (
+            {canInstallNatively && (
               <Button onClick={handleInstall} className="gap-2">
                 <Download className="h-4 w-4" />
                 Install App
@@ -112,7 +118,7 @@ export function InstallPrompt({ variant = 'banner', onClose }: InstallPromptProp
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {!isIOS && (
+          {canInstallNatively && (
             <Button size="sm" onClick={handleInstall}>
               Install
             </Button>
