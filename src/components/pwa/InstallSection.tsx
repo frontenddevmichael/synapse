@@ -1,27 +1,18 @@
-import { Download, Smartphone, Share, Check, Monitor, Zap, WifiOff } from 'lucide-react';
+import { Download, Smartphone, Zap, WifiOff, Check } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { fadeUp, stagger, viewport } from '@/lib/motion';
 
 export function InstallSection() {
-  const { 
-    isInstalled, 
-    platform, 
-    isIOSSafari,
-    canInstallNatively, 
-    needsManualInstall,
-    promptInstall 
-  } = usePWAInstall();
+  const { isInstalled, canInstallNatively, promptInstall } = usePWAInstall();
   const prefersReducedMotion = useReducedMotion();
 
-  // Don't show if already installed
-  if (isInstalled) return null;
+  // Only show if native install is available and not already installed
+  if (!canInstallNatively || isInstalled) return null;
 
   const handleInstall = async () => {
-    if (canInstallNatively) {
-      await promptInstall();
-    }
+    await promptInstall();
   };
 
   const benefits = [
@@ -68,54 +59,21 @@ export function InstallSection() {
               ))}
             </ul>
 
-            {/* Install Button or Instructions */}
-            {canInstallNatively && (
-              <Button size="lg" onClick={handleInstall} className="gap-2 w-full sm:w-auto">
-                <Download className="h-4 w-4" />
-                Install Synapse
-              </Button>
-            )}
-
-            {needsManualInstall && (
-              <div className="p-4 rounded-xl bg-card border">
-                <p className="font-medium text-sm mb-3">To install on {isIOSSafari ? 'Safari' : 'iOS'}:</p>
-                <ol className="space-y-2 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <span className="flex-shrink-0 h-5 w-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">1</span>
-                    <span>Tap the <Share className="inline h-4 w-4 mx-0.5" /> Share button in Safari</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="flex-shrink-0 h-5 w-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">2</span>
-                    <span>Scroll down and tap "Add to Home Screen"</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="flex-shrink-0 h-5 w-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">3</span>
-                    <span>Tap "Add" to confirm</span>
-                  </li>
-                </ol>
-              </div>
-            )}
-
-            {!canInstallNatively && !needsManualInstall && platform !== 'unknown' && (
-              <p className="text-sm text-muted-foreground">
-                <Monitor className="inline h-4 w-4 mr-1" />
-                Use Chrome or Edge to install this app on {platform === 'desktop' ? 'your computer' : 'your device'}.
-              </p>
-            )}
+            <Button size="lg" onClick={handleInstall} className="gap-2 w-full sm:w-auto">
+              <Download className="h-4 w-4" />
+              Install Synapse
+            </Button>
           </motion.div>
 
           {/* Device Mockup */}
           <motion.div variants={fadeUp} className="hidden md:flex justify-center">
             <div className="relative">
-              {/* Phone frame */}
               <div className="w-56 h-[420px] bg-gradient-to-b from-foreground/10 to-foreground/5 rounded-[2.5rem] p-2 shadow-2xl">
                 <div className="w-full h-full bg-background rounded-[2rem] overflow-hidden border border-border">
-                  {/* Status bar */}
                   <div className="h-7 bg-card flex items-center justify-center">
                     <div className="w-16 h-1 bg-foreground/20 rounded-full" />
                   </div>
                   
-                  {/* App content preview */}
                   <div className="p-4">
                     <div className="flex items-center gap-2 mb-4">
                       <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
@@ -127,7 +85,6 @@ export function InstallSection() {
                       </div>
                     </div>
 
-                    {/* Mock quiz card */}
                     <div className="p-3 rounded-lg bg-card border mb-3">
                       <div className="h-2 w-20 bg-muted rounded mb-2" />
                       <div className="h-2 w-full bg-muted rounded mb-2" />
@@ -145,7 +102,6 @@ export function InstallSection() {
                       </div>
                     </div>
 
-                    {/* Stats preview */}
                     <div className="flex gap-2">
                       <div className="flex-1 p-2 rounded-lg bg-primary/10 text-center">
                         <div className="text-xs font-bold text-primary">12</div>
@@ -160,7 +116,6 @@ export function InstallSection() {
                 </div>
               </div>
 
-              {/* Decorative elements */}
               <div className="absolute -top-4 -right-4 h-20 w-20 bg-primary/10 rounded-full blur-2xl" />
               <div className="absolute -bottom-4 -left-4 h-16 w-16 bg-accent/10 rounded-full blur-2xl" />
             </div>
