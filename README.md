@@ -51,7 +51,7 @@ Room rules are enforced at both the backend and frontend level.
 * AI converts content into structured quizzes
 * Supported question types:
 
-  * Multiple choice
+  * Objective Qustions (multiple Choice)
   * True / False
 * Difficulty levels: easy, medium, hard
 
