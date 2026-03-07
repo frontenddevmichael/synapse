@@ -12,7 +12,8 @@ import {
   Check,
   File,
   Loader2,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,26 +24,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { extractTextFromPDF, formatFileSize } from '@/lib/pdfParser';
 import { QuestionCountSelector } from '@/components/quiz/QuestionCountSelector';
+import { RoomSettings } from '@/components/room/RoomSettings';
 
 interface Room {
   id: string;
@@ -454,6 +451,28 @@ const RoomPage = () => {
     }
   };
 
+  const handleDeleteDocument = async (docId: string) => {
+    const { error } = await supabase.from('documents').delete().eq('id', docId);
+    if (error) {
+      toast({ title: 'Failed to delete document', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Document deleted' });
+      fetchRoomData();
+    }
+  };
+
+  const handleDeleteQuiz = async (quizId: string) => {
+    // Delete questions first, then quiz
+    await supabase.from('questions').delete().eq('quiz_id', quizId);
+    const { error } = await supabase.from('quizzes').delete().eq('id', quizId);
+    if (error) {
+      toast({ title: 'Failed to delete quiz', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Quiz deleted' });
+      fetchRoomData();
+    }
+  };
+
   const getModeColor = (mode: string) => {
     switch (mode) {
       case 'study':
@@ -668,6 +687,12 @@ const RoomPage = () => {
                 Leaderboard
               </TabsTrigger>
             )}
+            {user?.id === room.owner_id && (
+              <TabsTrigger value="settings" className="gap-2">
+                <Settings className="h-4 w-4" />
+                Settings
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Quizzes Tab */}
@@ -758,15 +783,39 @@ const RoomPage = () => {
                 {quizzes.map((quiz) => (
                   <Card 
                     key={quiz.id} 
-                    className="cursor-pointer hover:border-primary/50 transition-colors"
+                    className="cursor-pointer hover:border-primary/50 transition-colors relative group"
                     onClick={() => navigate(`/quiz/${quiz.id}`)}
                   >
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg">{quiz.title}</CardTitle>
-                        <Badge className={getDifficultyColor(quiz.difficulty)}>
-                          {quiz.difficulty}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge className={getDifficultyColor(quiz.difficulty)}>
+                            {quiz.difficulty}
+                          </Badge>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete quiz?</AlertDialogTitle>
+                                <AlertDialogDescription>This will permanently delete "{quiz.title}" and all its questions.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteQuiz(quiz.id)}>Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                       {quiz.description && (
                         <CardDescription>{quiz.description}</CardDescription>
@@ -797,11 +846,30 @@ const RoomPage = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {documents.map((doc) => (
-                  <Card key={doc.id}>
+                  <Card key={doc.id} className="group relative">
                     <CardHeader>
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-muted-foreground" />
-                        <CardTitle className="text-lg">{doc.name}</CardTitle>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-muted-foreground" />
+                          <CardTitle className="text-lg">{doc.name}</CardTitle>
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete document?</AlertDialogTitle>
+                              <AlertDialogDescription>This will permanently delete "{doc.name}".</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteDocument(doc.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                       <CardDescription>
                         {new Date(doc.created_at).toLocaleDateString()}
@@ -878,6 +946,23 @@ const RoomPage = () => {
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+          )}
+
+          {/* Settings Tab */}
+          {user?.id === room.owner_id && (
+            <TabsContent value="settings" className="mt-6">
+              <RoomSettings
+                roomId={room.id}
+                roomName={room.name}
+                mode={room.mode}
+                leaderboardEnabled={room.leaderboard_enabled}
+                ownerId={room.owner_id}
+                currentUserId={user.id}
+                members={members}
+                onUpdate={fetchRoomData}
+                onDelete={() => navigate('/dashboard')}
+              />
             </TabsContent>
           )}
         </Tabs>

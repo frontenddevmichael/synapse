@@ -12,6 +12,7 @@ import Room from "./pages/Room";
 import Quiz from "./pages/Quiz";
 import Preferences from "./pages/Preferences";
 import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/room/:roomId" element={<Room />} />
               <Route path="/quiz/:quizId" element={<Quiz />} />
               <Route path="/preferences" element={<Preferences />} />
+              <Route path="/profile" element={<Profile />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

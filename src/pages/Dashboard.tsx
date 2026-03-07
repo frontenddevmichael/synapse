@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users, BookOpen, Trophy, LogOut, Settings, BarChart3 } from 'lucide-react';
+import { Plus, Users, BookOpen, Trophy, LogOut, Settings, BarChart3, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Logo } from '@/components/Logo';
@@ -210,6 +210,9 @@ const Dashboard = () => {
           )}
           {stats && <StreakBadge days={stats.streak_days} />}
           <ThemeToggle />
+          <Button variant="ghost" size="icon" onClick={() => navigate('/profile')}>
+            <User className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => navigate('/preferences')}>
             <Settings className="h-4 w-4" />
           </Button>

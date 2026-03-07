@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, CheckCircle, XCircle, Loader2, AlertTriangle, Lock } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle, XCircle, Loader2, AlertTriangle, Lock, Star, Zap } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Logo } from '@/components/Logo';
@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { QuizTimer } from '@/components/quiz/QuizTimer';
 import { StudyModeAnswer } from '@/components/quiz/StudyModeAnswer';
+import { useGamification } from '@/hooks/useGamification';
+import { AchievementToast } from '@/components/gamification/AchievementToast';
 
 interface Quiz {
   id: string;
@@ -55,6 +57,7 @@ const QuizPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { updateStatsOnQuizComplete, newAchievement, clearNewAchievement } = useGamification();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -64,6 +67,11 @@ const QuizPage = () => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showResults, setShowResults] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Gamification results
+  const [xpEarned, setXpEarned] = useState<number | null>(null);
+  const [leveledUp, setLeveledUp] = useState(false);
+  const [newLevel, setNewLevel] = useState<number | null>(null);
   
   // Room mode and preferences
   const [roomMode, setRoomMode] = useState<RoomMode>('study');
@@ -91,7 +99,6 @@ const QuizPage = () => {
 
     setIsLoading(true);
 
-    // Fetch quiz
     const { data: quizData, error: quizError } = await supabase
       .from('quizzes')
       .select('*')
@@ -99,17 +106,13 @@ const QuizPage = () => {
       .maybeSingle();
 
     if (quizError || !quizData) {
-      toast({
-        title: 'Quiz not found',
-        variant: 'destructive',
-      });
+      toast({ title: 'Quiz not found', variant: 'destructive' });
       navigate('/dashboard');
       return;
     }
 
     setQuiz(quizData as Quiz);
 
-    // Fetch room to get mode
     const { data: roomData } = await supabase
       .from('rooms')
       .select('mode')
@@ -120,7 +123,6 @@ const QuizPage = () => {
       setRoomMode(roomData.mode as RoomMode);
     }
 
-    // Fetch user preferences
     const { data: prefsData } = await supabase
       .from('user_preferences')
       .select('*')
@@ -131,14 +133,11 @@ const QuizPage = () => {
       setUserPreferences(prefsData as UserPreferences);
     }
 
-    // Calculate effective time limit
     const timeLimit = quizData.time_limit_minutes || prefsData?.default_time_limit || null;
-    // Only apply timer in challenge mode or if quiz explicitly has a time limit
     if (roomData?.mode === 'challenge' || quizData.time_limit_minutes) {
       setEffectiveTimeLimit(timeLimit);
     }
 
-    // Fetch questions
     const { data: questionsData } = await supabase
       .from('questions')
       .select('*')
@@ -153,7 +152,6 @@ const QuizPage = () => {
       setQuestions(formattedQuestions);
     }
 
-    // Check for existing attempt
     const { data: attemptData } = await supabase
       .from('quiz_attempts')
       .select('*')
@@ -163,16 +161,13 @@ const QuizPage = () => {
 
     if (attemptData && attemptData.length > 0) {
       const latestAttempt = attemptData[0] as QuizAttempt;
-      
-      // Check if user has a completed attempt (for exam mode)
       const hasCompleted = attemptData.some((a: any) => a.status === 'completed');
       setHasCompletedAttempt(hasCompleted);
       
       if (latestAttempt.status === 'completed') {
         setAttempt(latestAttempt);
-        const savedAnswers = (latestAttempt.answers as Record<string, string>) || {};
         setShowResults(true);
-        setAnswers(savedAnswers);
+        setAnswers((latestAttempt.answers as Record<string, string>) || {});
       } else if (latestAttempt.status === 'in_progress') {
         setAttempt(latestAttempt);
         const savedAnswers = (latestAttempt.answers as Record<string, string>) || {};
@@ -187,13 +182,8 @@ const QuizPage = () => {
   const startQuiz = async () => {
     if (!quizId || !user) return;
 
-    // Exam mode: prevent retake
     if (roomMode === 'exam' && hasCompletedAttempt) {
-      toast({
-        title: 'Quiz already completed',
-        description: 'Exam mode only allows one attempt per quiz.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Quiz already completed', description: 'Exam mode only allows one attempt per quiz.', variant: 'destructive' });
       return;
     }
 
@@ -211,11 +201,7 @@ const QuizPage = () => {
       .single();
 
     if (error) {
-      toast({
-        title: 'Failed to start quiz',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Failed to start quiz', description: error.message, variant: 'destructive' });
       return;
     }
 
@@ -227,12 +213,10 @@ const QuizPage = () => {
     const newAnswers = { ...answers, [questionId]: answer };
     setAnswers(newAnswers);
 
-    // In study mode, mark question as answered to show feedback
     if (roomMode === 'study') {
       setAnsweredQuestions(prev => new Set(prev).add(questionId));
     }
 
-    // Save progress
     if (attempt) {
       await supabase
         .from('quiz_attempts')
@@ -251,7 +235,6 @@ const QuizPage = () => {
 
     setIsSubmitting(true);
 
-    // Calculate score
     let correctCount = 0;
     questions.forEach((q) => {
       if (answers[q.id] === q.correct_answer) {
@@ -272,55 +255,91 @@ const QuizPage = () => {
       .eq('id', attempt.id);
 
     if (error) {
-      toast({
-        title: 'Failed to submit quiz',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Failed to submit quiz', description: error.message, variant: 'destructive' });
       setIsSubmitting(false);
       return;
+    }
+
+    // Wire gamification: update XP, streaks, achievements, daily activity
+    try {
+      const gamResult = await updateStatsOnQuizComplete(
+        correctCount,
+        questions.length,
+        score,
+        attempt.started_at || new Date().toISOString()
+      );
+
+      if (gamResult) {
+        setXpEarned(gamResult.xpEarned);
+        if (gamResult.levelUp) {
+          setLeveledUp(true);
+          setNewLevel(gamResult.newLevel);
+        }
+      }
+
+      // Write daily activity
+      const today = new Date().toISOString().split('T')[0];
+      const { data: existingActivity } = await supabase
+        .from('daily_activity')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .maybeSingle();
+
+      if (existingActivity) {
+        await supabase
+          .from('daily_activity')
+          .update({
+            quizzes_completed: (existingActivity.quizzes_completed || 0) + 1,
+            correct_answers: (existingActivity.correct_answers || 0) + correctCount,
+            total_answers: (existingActivity.total_answers || 0) + questions.length,
+            xp_earned: (existingActivity.xp_earned || 0) + (gamResult?.xpEarned || 0),
+            perfect_quizzes: (existingActivity.perfect_quizzes || 0) + (score === 100 ? 1 : 0),
+          })
+          .eq('id', existingActivity.id);
+      } else {
+        await supabase
+          .from('daily_activity')
+          .insert({
+            user_id: user.id,
+            date: today,
+            quizzes_completed: 1,
+            correct_answers: correctCount,
+            total_answers: questions.length,
+            xp_earned: gamResult?.xpEarned || 0,
+            perfect_quizzes: score === 100 ? 1 : 0,
+          });
+      }
+    } catch (err) {
+      console.error('Gamification update error:', err);
     }
 
     setAttempt({ ...attempt, status: 'completed', score });
     setShowResults(true);
     setIsSubmitting(false);
 
-    toast({
-      title: 'Quiz completed!',
-      description: `You scored ${score}%`,
-    });
+    toast({ title: 'Quiz completed!', description: `You scored ${score}%` });
   };
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
-  
-  // Study mode: check if current question has been answered
   const currentQuestionAnswered = currentQuestion && answeredQuestions.has(currentQuestion.id);
-  
-  // Check if we should show answer review (not in exam mode based on preferences)
   const shouldShowAnswerReview = roomMode !== 'exam' || (userPreferences?.show_answers_immediately ?? true);
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy':
-        return 'bg-success/10 text-success';
-      case 'medium':
-        return 'bg-warning/10 text-warning';
-      case 'hard':
-        return 'bg-destructive/10 text-destructive';
-      default:
-        return 'bg-muted text-muted-foreground';
+      case 'easy': return 'bg-success/10 text-success';
+      case 'medium': return 'bg-warning/10 text-warning';
+      case 'hard': return 'bg-destructive/10 text-destructive';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const getModeDescription = (mode: RoomMode) => {
     switch (mode) {
-      case 'study':
-        return 'Answers are revealed immediately after each question';
-      case 'challenge':
-        return 'Timed quiz with leaderboard ranking';
-      case 'exam':
-        return 'Single attempt only, no answer review';
+      case 'study': return 'Answers are revealed immediately after each question';
+      case 'challenge': return 'Timed quiz with leaderboard ranking';
+      case 'exam': return 'Single attempt only, no answer review';
     }
   };
 
@@ -352,27 +371,19 @@ const QuizPage = () => {
           <Card className="w-full max-w-md animate-scale-in">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">{quiz.title}</CardTitle>
-              {quiz.description && (
-                <CardDescription>{quiz.description}</CardDescription>
-              )}
+              {quiz.description && <CardDescription>{quiz.description}</CardDescription>}
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex flex-wrap justify-center gap-2">
-                <Badge className={getDifficultyColor(quiz.difficulty)}>
-                  {quiz.difficulty}
-                </Badge>
-                <Badge variant="outline">
-                  {questions.length} question{questions.length !== 1 ? 's' : ''}
-                </Badge>
+                <Badge className={getDifficultyColor(quiz.difficulty)}>{quiz.difficulty}</Badge>
+                <Badge variant="outline">{questions.length} question{questions.length !== 1 ? 's' : ''}</Badge>
                 {effectiveTimeLimit && (
                   <Badge variant="outline" className="gap-1">
                     <Clock className="h-3 w-3" />
                     {effectiveTimeLimit} min
                   </Badge>
                 )}
-                <Badge variant="secondary" className="capitalize">
-                  {roomMode} mode
-                </Badge>
+                <Badge variant="secondary" className="capitalize">{roomMode} mode</Badge>
               </div>
 
               <div className="p-3 rounded-lg bg-muted/50 text-center">
@@ -388,14 +399,10 @@ const QuizPage = () => {
                       <p className="text-sm opacity-80">Exam mode allows only one attempt</p>
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full" onClick={() => navigate(-1)}>
-                    Back to Room
-                  </Button>
+                  <Button variant="outline" className="w-full" onClick={() => navigate(-1)}>Back to Room</Button>
                 </div>
               ) : (
-                <Button className="w-full" size="lg" onClick={startQuiz}>
-                  Start Quiz
-                </Button>
+                <Button className="w-full" size="lg" onClick={startQuiz}>Start Quiz</Button>
               )}
             </CardContent>
           </Card>
@@ -410,6 +417,15 @@ const QuizPage = () => {
 
     return (
       <div className="min-h-screen flex flex-col bg-background">
+        {newAchievement && (
+          <AchievementToast
+            name={newAchievement.name}
+            description={newAchievement.description}
+            icon={newAchievement.icon}
+            xpReward={newAchievement.xp_reward}
+            onClose={clearNewAchievement}
+          />
+        )}
         <header className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -431,11 +447,27 @@ const QuizPage = () => {
               <p className="text-muted-foreground">
                 {correctCount} out of {questions.length} correct
               </p>
+              
+              {/* XP and level feedback */}
+              {xpEarned !== null && (
+                <div className="flex items-center justify-center gap-4 pt-2">
+                  <div className="flex items-center gap-1.5 text-sm font-medium text-primary">
+                    <Zap className="h-4 w-4" />
+                    +{xpEarned} XP
+                  </div>
+                  {leveledUp && newLevel && (
+                    <div className="flex items-center gap-1.5 text-sm font-medium text-warning">
+                      <Star className="h-4 w-4" />
+                      Level {newLevel}!
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <Button onClick={() => navigate(-1)}>Back to Room</Button>
             </CardContent>
           </Card>
 
-          {/* Only show answer review if allowed by mode/preferences */}
           {shouldShowAnswerReview && (
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">Review Answers</h2>
@@ -515,12 +547,20 @@ const QuizPage = () => {
   // Quiz in progress
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {newAchievement && (
+        <AchievementToast
+          name={newAchievement.name}
+          description={newAchievement.description}
+          icon={newAchievement.icon}
+          xpReward={newAchievement.xp_reward}
+          onClose={clearNewAchievement}
+        />
+      )}
       <header className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-4">
           <Logo />
         </div>
         <div className="flex items-center gap-4">
-          {/* Timer - show in challenge mode or if quiz has time limit */}
           {effectiveTimeLimit && attempt.started_at && (
             <QuizTimer
               timeLimitMinutes={effectiveTimeLimit}
@@ -536,7 +576,6 @@ const QuizPage = () => {
         </div>
       </header>
 
-      {/* Progress bar */}
       <Progress value={progress} className="h-1 rounded-none" />
 
       <main className="flex-1 container max-w-3xl py-8">
@@ -550,7 +589,6 @@ const QuizPage = () => {
             <CardContent>
               <div className="space-y-3">
                 {currentQuestion.options.map((option) => {
-                  // In study mode after answering, highlight correct/incorrect
                   const showStudyFeedback = roomMode === 'study' && currentQuestionAnswered;
                   const isCorrect = option === currentQuestion.correct_answer;
                   const isSelected = answers[currentQuestion.id] === option;
@@ -563,15 +601,12 @@ const QuizPage = () => {
                       disabled={roomMode === 'study' && currentQuestionAnswered}
                       className={cn(
                         'w-full p-4 text-left rounded-lg border transition-colors',
-                        // Default states
                         !showStudyFeedback && answers[currentQuestion.id] === option
                           ? 'border-primary bg-primary/10'
                           : !showStudyFeedback && 'border-border hover:border-primary/50',
-                        // Study mode feedback states
                         showStudyFeedback && isCorrect && 'border-success bg-success/10',
                         showStudyFeedback && isWrongAnswer && 'border-destructive bg-destructive/10',
                         showStudyFeedback && !isCorrect && !isWrongAnswer && 'border-border opacity-50',
-                        // Disabled state
                         roomMode === 'study' && currentQuestionAnswered && 'cursor-not-allowed'
                       )}
                     >
@@ -587,7 +622,6 @@ const QuizPage = () => {
                 })}
               </div>
 
-              {/* Study mode: show explanation after answering */}
               {roomMode === 'study' && currentQuestionAnswered && currentQuestion.explanation && (
                 <StudyModeAnswer
                   options={currentQuestion.options}
@@ -627,7 +661,6 @@ const QuizPage = () => {
           </Card>
         )}
 
-        {/* Question navigation dots */}
         <div className="flex justify-center gap-2 mt-6 flex-wrap">
           {questions.map((q, i) => (
             <button
