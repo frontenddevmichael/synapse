@@ -783,15 +783,39 @@ const RoomPage = () => {
                 {quizzes.map((quiz) => (
                   <Card 
                     key={quiz.id} 
-                    className="cursor-pointer hover:border-primary/50 transition-colors"
+                    className="cursor-pointer hover:border-primary/50 transition-colors relative group"
                     onClick={() => navigate(`/quiz/${quiz.id}`)}
                   >
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg">{quiz.title}</CardTitle>
-                        <Badge className={getDifficultyColor(quiz.difficulty)}>
-                          {quiz.difficulty}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge className={getDifficultyColor(quiz.difficulty)}>
+                            {quiz.difficulty}
+                          </Badge>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete quiz?</AlertDialogTitle>
+                                <AlertDialogDescription>This will permanently delete "{quiz.title}" and all its questions.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteQuiz(quiz.id)}>Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                       {quiz.description && (
                         <CardDescription>{quiz.description}</CardDescription>
