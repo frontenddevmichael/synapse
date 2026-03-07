@@ -451,6 +451,28 @@ const RoomPage = () => {
     }
   };
 
+  const handleDeleteDocument = async (docId: string) => {
+    const { error } = await supabase.from('documents').delete().eq('id', docId);
+    if (error) {
+      toast({ title: 'Failed to delete document', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Document deleted' });
+      fetchRoomData();
+    }
+  };
+
+  const handleDeleteQuiz = async (quizId: string) => {
+    // Delete questions first, then quiz
+    await supabase.from('questions').delete().eq('quiz_id', quizId);
+    const { error } = await supabase.from('quizzes').delete().eq('id', quizId);
+    if (error) {
+      toast({ title: 'Failed to delete quiz', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Quiz deleted' });
+      fetchRoomData();
+    }
+  };
+
   const getModeColor = (mode: string) => {
     switch (mode) {
       case 'study':
