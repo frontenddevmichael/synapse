@@ -948,6 +948,23 @@ const RoomPage = () => {
               )}
             </TabsContent>
           )}
+
+          {/* Settings Tab */}
+          {user?.id === room.owner_id && (
+            <TabsContent value="settings" className="mt-6">
+              <RoomSettings
+                roomId={room.id}
+                roomName={room.name}
+                mode={room.mode}
+                leaderboardEnabled={room.leaderboard_enabled}
+                ownerId={room.owner_id}
+                currentUserId={user.id}
+                members={members}
+                onUpdate={fetchRoomData}
+                onDelete={() => navigate('/dashboard')}
+              />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>
