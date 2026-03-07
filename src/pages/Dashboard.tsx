@@ -210,6 +210,9 @@ const Dashboard = () => {
           )}
           {stats && <StreakBadge days={stats.streak_days} />}
           <ThemeToggle />
+          <Button variant="ghost" size="icon" onClick={() => navigate('/profile')}>
+            <User className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => navigate('/preferences')}>
             <Settings className="h-4 w-4" />
           </Button>
