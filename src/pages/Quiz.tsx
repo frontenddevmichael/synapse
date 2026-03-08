@@ -80,9 +80,30 @@ const QuizPage = () => {
   const [hasCompletedAttempt, setHasCompletedAttempt] = useState(false);
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<string>>(new Set());
 
+  // Fetch bookmarks for current user
+  const fetchBookmarks = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('bookmarked_questions')
+      .select('question_id')
+      .eq('user_id', user.id);
+    if (data) setBookmarkedQuestions(new Set(data.map(b => b.question_id)));
+  };
+
+  const toggleBookmark = async (questionId: string) => {
+    if (!user) return;
+    if (bookmarkedQuestions.has(questionId)) {
+      await supabase.from('bookmarked_questions').delete().eq('user_id', user.id).eq('question_id', questionId);
+      setBookmarkedQuestions(prev => { const next = new Set(prev); next.delete(questionId); return next; });
+    } else {
+      await supabase.from('bookmarked_questions').insert({ user_id: user.id, question_id: questionId });
+      setBookmarkedQuestions(prev => new Set(prev).add(questionId));
+    }
+  };
+
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
-    if (quizId) fetchQuizData();
+    if (quizId) { fetchQuizData(); fetchBookmarks(); }
   }, [user, quizId, navigate]);
 
   const fetchQuizData = async () => {
