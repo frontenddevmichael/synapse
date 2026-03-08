@@ -239,7 +239,7 @@ const Index = () => {
       </footer>
 
       {showInstallBanner && (
-        <InstallPrompt variant="banner" onClose={() => setShowInstallBanner(false)} />
+        <PWAInstall variant="banner" onClose={() => setShowInstallBanner(false)} />
       )}
     </div>
   );
