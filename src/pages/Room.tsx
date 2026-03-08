@@ -29,6 +29,8 @@ import { useToast } from '@/hooks/use-toast';
 import { extractTextFromPDF, formatFileSize } from '@/lib/pdfParser';
 import { QuestionCountSelector } from '@/components/quiz/QuestionCountSelector';
 import { RoomSettings } from '@/components/room/RoomSettings';
+import { ActiveUsersIndicator } from '@/components/realtime/ActiveUsersIndicator';
+import { QuizGeneratingOverlay } from '@/components/quiz/QuizGeneratingOverlay';
 import { fadeUp, staggerFast } from '@/lib/motion';
 
 interface Room {
