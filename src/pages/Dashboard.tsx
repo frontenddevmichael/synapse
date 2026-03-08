@@ -178,6 +178,16 @@ const Dashboard = () => {
     navigate('/auth');
   };
 
+  const handleDeleteRoom = async (roomId: string) => {
+    const { error } = await supabase.from('rooms').delete().eq('id', roomId);
+    if (error) {
+      toast({ title: 'Failed to delete room', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Room deleted' });
+      fetchRooms();
+    }
+  };
+
   const getModeStyles = (mode: string) => {
     const styles: Record<string, string> = {
       study: 'bg-success/10 text-success border-success/20',
