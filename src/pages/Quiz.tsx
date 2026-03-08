@@ -17,6 +17,7 @@ import { StudyModeAnswer } from '@/components/quiz/StudyModeAnswer';
 import { useGamification } from '@/hooks/useGamification';
 import { useActiveSession } from '@/hooks/useActiveSession';
 import { AchievementToast } from '@/components/gamification/AchievementToast';
+import { LevelUpOverlay } from '@/components/gamification/LevelUpOverlay';
 import { fadeUp, stagger } from '@/lib/motion';
 
 interface Quiz {
