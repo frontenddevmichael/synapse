@@ -388,9 +388,24 @@ const QuizPage = () => {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="w-full max-w-2xl"
           >
-            <p className="font-serif text-2xl sm:text-3xl lg:text-4xl leading-relaxed mb-10 text-center text-balance">
-              {currentQuestion.question_text}
-            </p>
+            <div className="flex items-start justify-between mb-10">
+              <p className="font-serif text-2xl sm:text-3xl lg:text-4xl leading-relaxed text-center text-balance flex-1">
+                {currentQuestion.question_text}
+              </p>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => toggleBookmark(currentQuestion.id)}
+                className="shrink-0 ml-4 mt-1"
+                title={bookmarkedQuestions.has(currentQuestion.id) ? 'Remove bookmark' : 'Bookmark question'}
+              >
+                {bookmarkedQuestions.has(currentQuestion.id) ? (
+                  <BookmarkCheck className="h-5 w-5 text-primary" />
+                ) : (
+                  <Bookmark className="h-5 w-5 text-muted-foreground" />
+                )}
+              </Button>
+            </div>
 
             <div className="space-y-3 mb-10">
               {currentQuestion.options.map((option, i) => {
