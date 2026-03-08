@@ -16,9 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
-import { InstallPrompt } from '@/components/pwa/InstallPrompt';
-import { InstallSection } from '@/components/pwa/InstallSection';
-import { InstallButton } from '@/components/pwa/InstallButton';
+import { PWAInstall } from '@/components/pwa/PWAInstall';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { fadeUp, stagger, viewport, staggerSlow } from '@/lib/motion';
 
