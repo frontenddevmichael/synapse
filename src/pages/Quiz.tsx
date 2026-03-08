@@ -78,6 +78,7 @@ const QuizPage = () => {
   const [effectiveTimeLimit, setEffectiveTimeLimit] = useState<number | null>(null);
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(new Set());
   const [hasCompletedAttempt, setHasCompletedAttempt] = useState(false);
+  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
