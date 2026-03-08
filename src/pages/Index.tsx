@@ -59,7 +59,7 @@ const Index = () => {
       <header className="flex items-center justify-between px-4 sm:px-8 py-5 bg-background/60 backdrop-blur-xl sticky top-0 z-50 border-b border-border/30">
         <Logo size="lg" />
         <div className="flex items-center gap-3">
-          <InstallButton className="hidden sm:inline-flex" />
+          
           <ThemeToggle />
           <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="hidden sm:inline-flex font-medium">
             Sign in
