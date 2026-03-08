@@ -148,7 +148,7 @@ export function AnalyticsDashboard() {
               compact
             />
             <div className="mt-3 flex items-center gap-2">
-              <Flame className="h-4 w-4 text-orange-500" />
+              <Flame className="h-4 w-4 text-warning" />
               <span className="text-sm text-muted-foreground">
                 {stats?.streak_days || 0} day streak
                 {(stats?.xp_multiplier || 1) > 1 && (

@@ -150,9 +150,9 @@ export function AchievementShowcase({ achievements, userAchievements, maxDisplay
                     {rarity !== 'common' && (
                       <div className={cn(
                         'absolute -top-1 -right-1 w-3 h-3 rounded-full',
-                        rarity === 'rare' && 'bg-blue-400',
-                        rarity === 'epic' && 'bg-purple-400',
-                        rarity === 'legendary' && 'bg-yellow-400 animate-pulse'
+                        rarity === 'rare' && 'bg-mode-study',
+                        rarity === 'epic' && 'bg-gold',
+                        rarity === 'legendary' && 'bg-gold animate-pulse'
                       )} />
                     )}
                   </div>
