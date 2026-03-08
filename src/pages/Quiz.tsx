@@ -449,20 +449,22 @@ const QuizPage = () => {
               <StudyModeAnswer options={currentQuestion.options} selectedAnswer={answers[currentQuestion.id]} correctAnswer={currentQuestion.correct_answer} explanation={currentQuestion.explanation} showFeedback={true} />
             )}
 
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <Button variant="ghost" onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))} disabled={currentQuestionIndex === 0} className="font-semibold">
                 Previous
               </Button>
-              {currentQuestionIndex === questions.length - 1 ? (
-                <Button onClick={submitQuiz} disabled={isSubmitting || Object.keys(answers).length < questions.length} className="font-bold h-11 px-8">
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Submit Quiz
-                </Button>
-              ) : (
-                <Button onClick={() => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))} className="font-semibold">
-                  Next
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {currentQuestionIndex === questions.length - 1 ? (
+                  <Button onClick={submitQuiz} disabled={isSubmitting || Object.keys(answers).length < questions.length} className="font-bold h-11 px-8">
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Submit Quiz
+                  </Button>
+                ) : (
+                  <Button onClick={() => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))} className="font-semibold">
+                    Next
+                  </Button>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
