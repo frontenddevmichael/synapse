@@ -48,19 +48,19 @@ const iconMap: Record<string, LucideIcon> = {
 
 const categoryColors: Record<string, { bg: string; border: string; text: string }> = {
   offensive: { 
-    bg: 'bg-orange-500/10', 
-    border: 'border-orange-500/30', 
-    text: 'text-orange-500' 
+    bg: 'bg-warning/10', 
+    border: 'border-warning/30', 
+    text: 'text-warning' 
   },
   defensive: { 
-    bg: 'bg-blue-500/10', 
-    border: 'border-blue-500/30', 
-    text: 'text-blue-400' 
+    bg: 'bg-mode-study/10', 
+    border: 'border-mode-study/30', 
+    text: 'text-mode-study' 
   },
   special: { 
-    bg: 'bg-purple-500/10', 
-    border: 'border-purple-500/30', 
-    text: 'text-purple-400' 
+    bg: 'bg-gold/10', 
+    border: 'border-gold/30', 
+    text: 'text-gold' 
   },
   general: { 
     bg: 'bg-primary/10', 
