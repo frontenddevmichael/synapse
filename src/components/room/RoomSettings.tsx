@@ -49,7 +49,7 @@ export function RoomSettings({
     setIsSaving(true);
     const { error } = await supabase
       .from('rooms')
-      .update({ mode: currentMode, leaderboard_enabled: leaderboard })
+      .update({ name: currentName.trim(), mode: currentMode, leaderboard_enabled: leaderboard })
       .eq('id', roomId);
 
     if (error) {
