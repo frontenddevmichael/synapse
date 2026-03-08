@@ -158,6 +158,7 @@ const QuizPage = () => {
     setAnswers(newAnswers);
     if (roomMode === 'study') setAnsweredQuestions(prev => new Set(prev).add(questionId));
     if (attempt) await supabase.from('quiz_attempts').update({ answers: newAnswers }).eq('id', attempt.id);
+    updateProgress(currentQuestionIndex, Object.keys(newAnswers).length);
   };
 
   const handleTimeUp = useCallback(async () => {
