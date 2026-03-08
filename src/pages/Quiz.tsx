@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, CheckCircle, XCircle, Loader2, AlertTriangle, Lock, Star, Zap } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle, XCircle, Loader2, AlertTriangle, Lock, Star, Zap, Bookmark, BookmarkCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
