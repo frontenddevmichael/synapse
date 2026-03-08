@@ -38,6 +38,7 @@ export function RoomSettings({
 }: RoomSettingsProps) {
   const { toast } = useToast();
   const [currentMode, setCurrentMode] = useState(mode);
+  const [currentName, setCurrentName] = useState(roomName);
   const [leaderboard, setLeaderboard] = useState(leaderboardEnabled);
   const [isSaving, setIsSaving] = useState(false);
   const isOwner = currentUserId === ownerId;
