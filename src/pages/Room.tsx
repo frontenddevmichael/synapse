@@ -390,6 +390,9 @@ const RoomPage = () => {
                   <Users className="h-3.5 w-3.5" />
                   {members.length} member{members.length !== 1 ? 's' : ''}
                 </span>
+                {quizzes.length > 0 && (
+                  <ActiveUsersIndicator quizId={quizzes[0]?.id || ''} roomId={room.id} />
+                )}
                 <span className="text-sm text-muted-foreground flex items-center gap-1.5">
                   <Sparkles className="h-3.5 w-3.5" />
                   {quizzes.length} quiz{quizzes.length !== 1 ? 'zes' : ''}
