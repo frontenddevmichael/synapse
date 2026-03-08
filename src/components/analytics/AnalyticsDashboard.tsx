@@ -240,11 +240,11 @@ export function AnalyticsDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <StreakBadgeEnhanced
-              offensiveStreak={0}
-              defensiveStreak={0}
+        <StreakBadgeEnhanced
+              offensiveStreak={stats?.hot_streak || 0}
+              defensiveStreak={stats?.best_hot_streak || 0}
               dailyStreak={stats?.streak_days || 0}
-              hasStreakFreeze={false}
+              hasStreakFreeze={stats?.streak_freeze_available || false}
             />
           </CardContent>
         </Card>
