@@ -6,10 +6,6 @@ interface LogoProps {
   className?: string;
 }
 
-/**
- * Synapse Logo Mark — Abstract neural connection symbol
- * Minimal, geometric, represents interconnected learning
- */
 const SynapseMark = ({ className }: { className?: string }) => (
   <svg
     viewBox="0 0 32 32"
@@ -18,12 +14,9 @@ const SynapseMark = ({ className }: { className?: string }) => (
     className={className}
     aria-hidden="true"
   >
-    {/* Three interconnected nodes representing collaborative learning */}
     <circle cx="16" cy="8" r="3" className="fill-current" />
     <circle cx="8" cy="24" r="3" className="fill-current" />
     <circle cx="24" cy="24" r="3" className="fill-current" />
-    
-    {/* Connection lines */}
     <path
       d="M16 11V16M16 16L10 22M16 16L22 22"
       className="stroke-current"
@@ -31,8 +24,6 @@ const SynapseMark = ({ className }: { className?: string }) => (
       strokeLinecap="round"
       strokeLinejoin="round"
     />
-    
-    {/* Central hub - the synapse */}
     <circle cx="16" cy="16" r="2" className="fill-current opacity-60" />
   </svg>
 );
@@ -47,17 +38,17 @@ export const Logo = ({ size = 'md', showText = true, className }: LogoProps) => 
   const textSizes = {
     sm: 'text-lg',
     md: 'text-xl',
-    lg: 'text-2xl',
+    lg: 'text-3xl',
   };
 
   return (
-    <div className={cn('flex items-center gap-2', className)}>
-      <div className="synapse-mark text-primary">
+    <div className={cn('flex items-center gap-2.5', className)}>
+      <div className="text-primary">
         <SynapseMark className={cn(iconSizes[size])} />
       </div>
       {showText && (
         <span className={cn(
-          'font-semibold tracking-tight text-foreground',
+          'font-bold tracking-tighter text-foreground',
           textSizes[size]
         )}>
           Synapse

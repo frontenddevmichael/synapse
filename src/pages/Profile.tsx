@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Trophy, Zap, Target } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Logo } from '@/components/Logo';
@@ -13,14 +14,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useGamification } from '@/hooks/useGamification';
 import { XpProgress } from '@/components/gamification/XpProgress';
 import { StreakBadge } from '@/components/gamification/StreakBadge';
-import { AchievementShowcase } from '@/components/gamification/AchievementShowcase';
+import { AchievementShowcase, TrophyCase } from '@/components/gamification/AchievementShowcase';
+import { fadeUp, staggerFast } from '@/lib/motion';
 
 const Profile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { stats, achievements, earnedAchievements, isLoading: gamLoading, getXpProgress } = useGamification();
-
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -33,31 +34,17 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from('profiles')
-      .select('username, display_name')
-      .eq('id', user.id)
-      .single();
-    if (data) {
-      setUsername(data.username);
-      setDisplayName(data.display_name || '');
-    }
+    const { data } = await supabase.from('profiles').select('username, display_name').eq('id', user.id).single();
+    if (data) { setUsername(data.username); setDisplayName(data.display_name || ''); }
     setIsLoading(false);
   };
 
   const handleSave = async () => {
     if (!user || !username.trim()) return;
     setIsSaving(true);
-    const { error } = await supabase
-      .from('profiles')
-      .update({ username: username.trim(), display_name: displayName.trim() || null })
-      .eq('id', user.id);
-
-    if (error) {
-      toast({ title: 'Failed to update profile', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Profile updated' });
-    }
+    const { error } = await supabase.from('profiles').update({ username: username.trim(), display_name: displayName.trim() || null }).eq('id', user.id);
+    if (error) toast({ title: 'Failed to update', description: error.message, variant: 'destructive' });
+    else toast({ title: 'Profile updated' });
     setIsSaving(false);
   };
 
@@ -65,97 +52,100 @@ const Profile = () => {
 
   if (isLoading || gamLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading profile...</div>
+      <div className="min-h-screen flex items-center justify-center bg-background noise-bg mesh-gradient">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <header className="flex items-center justify-between p-4 border-b border-border">
+    <div className="min-h-screen flex flex-col bg-background noise-bg mesh-gradient">
+      <header className="flex items-center justify-between p-4 sm:p-6 border-b border-border/30 bg-background/60 backdrop-blur-xl sticky top-0 z-40">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}><ArrowLeft className="h-4 w-4" /></Button>
           <Logo />
         </div>
         <ThemeToggle />
       </header>
 
-      <main className="flex-1 container max-w-2xl py-8 space-y-6">
-        <h1 className="text-2xl font-semibold">Profile</h1>
+      <main className="flex-1 container max-w-4xl py-8 px-4 sm:px-8 space-y-8">
+        <motion.div variants={staggerFast} initial="hidden" animate="visible">
+          <motion.h1 variants={fadeUp} className="text-3xl sm:text-4xl font-black tracking-tighter mb-8">Profile</motion.h1>
 
-        {/* Edit profile */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Account</CardTitle>
-            <CardDescription>Update your display name and username</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Username</Label>
-              <Input value={username} onChange={(e) => setUsername(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Display Name</Label>
-              <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Optional" />
-            </div>
-            <Button onClick={handleSave} disabled={isSaving || !username.trim()} className="gap-2">
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Save
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Stats overview */}
-        {stats && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <XpProgress
-                level={stats.level}
-                currentXp={xpProgress.current}
-                maxXp={xpProgress.max}
-                percentage={xpProgress.percentage}
-              />
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-                <div className="text-center">
-                  <p className="text-2xl font-bold">{stats.total_quizzes_completed}</p>
-                  <p className="text-xs text-muted-foreground">Quizzes</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold">{stats.total_correct_answers}</p>
-                  <p className="text-xs text-muted-foreground">Correct</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold">{stats.xp}</p>
-                  <p className="text-xs text-muted-foreground">Total XP</p>
-                </div>
-                <div className="text-center">
-                  <StreakBadge days={stats.streak_days} />
-                </div>
+          {/* Hero stats row */}
+          {stats && (
+            <motion.div variants={fadeUp} className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="bento-card text-center">
+                <p className="text-4xl font-black">{stats.total_quizzes_completed}</p>
+                <p className="text-sm text-muted-foreground font-medium">Quizzes</p>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <div className="bento-card text-center">
+                <p className="text-4xl font-black text-primary">{stats.xp}</p>
+                <p className="text-sm text-muted-foreground font-medium">Total XP</p>
+              </div>
+              <div className="bento-card text-center">
+                <p className="text-4xl font-black text-success">{stats.total_correct_answers}</p>
+                <p className="text-sm text-muted-foreground font-medium">Correct</p>
+              </div>
+              <div className="bento-card flex flex-col items-center justify-center">
+                <StreakBadge days={stats.streak_days} />
+              </div>
+            </motion.div>
+          )}
 
-        {/* Achievements */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Achievements</CardTitle>
-            <CardDescription>{earnedAchievements.size} of {achievements.length} unlocked</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <AchievementShowcase
-              achievements={achievements}
-              userAchievements={Array.from(earnedAchievements)}
-              maxDisplay={20}
-            />
-          </CardContent>
-        </Card>
+          {/* XP Progress - hero element */}
+          {stats && (
+            <motion.div variants={fadeUp} className="bento-card mb-8">
+              <XpProgress level={stats.level} currentXp={xpProgress.current} maxXp={xpProgress.max} percentage={xpProgress.percentage} />
+            </motion.div>
+          )}
+
+          {/* Edit profile */}
+          <motion.div variants={fadeUp}>
+            <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-xl font-bold">Account</CardTitle>
+                <CardDescription>Update your display name and username</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Username</Label>
+                    <Input value={username} onChange={(e) => setUsername(e.target.value)} className="h-11" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Display Name</Label>
+                    <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Optional" className="h-11" />
+                  </div>
+                </div>
+                <Button onClick={handleSave} disabled={isSaving || !username.trim()} className="gap-2 font-semibold">
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Save
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Trophy Cabinet */}
+          <motion.div variants={fadeUp}>
+            <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-gold/10 flex items-center justify-center">
+                    <Trophy className="h-5 w-5 text-gold" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl font-bold">Trophy Cabinet</CardTitle>
+                    <CardDescription>{earnedAchievements.size} of {achievements.length} unlocked</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <TrophyCase achievements={achievements} userAchievements={Array.from(earnedAchievements)} />
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
       </main>
     </div>
   );

@@ -40,33 +40,33 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, [shouldShowPrompt]);
 
-  // Disable animations if user prefers reduced motion
-  const animationProps = prefersReducedMotion 
-    ? {} 
+  const animationProps = prefersReducedMotion
+    ? {}
     : { variants: stagger, initial: 'hidden', animate: 'visible' };
-  
+
   const scrollAnimationProps = prefersReducedMotion
     ? {}
     : { variants: staggerSlow, initial: 'hidden', whileInView: 'visible', viewport };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background overflow-hidden">
-      {/* Background */}
+    <div className="min-h-screen flex flex-col bg-background noise-bg overflow-hidden">
+      {/* Mesh background */}
+      <div className="fixed inset-0 -z-10 mesh-gradient" />
       <div className="fixed inset-0 -z-10">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/3 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent/3 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-mode-study/5 rounded-full blur-[100px]" />
       </div>
 
       {/* Header */}
-      <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border/50 bg-background/80 backdrop-blur sticky top-0 z-50">
-        <Logo />
-        <div className="flex items-center gap-2">
+      <header className="flex items-center justify-between px-4 sm:px-8 py-5 bg-background/60 backdrop-blur-xl sticky top-0 z-50 border-b border-border/30">
+        <Logo size="lg" />
+        <div className="flex items-center gap-3">
           <InstallButton className="hidden sm:inline-flex" />
           <ThemeToggle />
-          <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="hidden sm:inline-flex">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="hidden sm:inline-flex font-medium">
             Sign in
           </Button>
-          <Button size="sm" onClick={() => navigate('/auth')}>
+          <Button size="sm" onClick={() => navigate('/auth')} className="font-semibold">
             Get started
           </Button>
         </div>
@@ -75,40 +75,45 @@ const Index = () => {
       {/* Hero */}
       <motion.section
         {...animationProps}
-        className="flex-1 flex items-center py-12 sm:py-20 lg:py-32"
+        className="flex-1 flex items-center py-16 sm:py-24 lg:py-32"
       >
-        <div className="container max-w-6xl px-4 sm:px-6">
-          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+        <div className="container max-w-6xl px-4 sm:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             <motion.div variants={stagger}>
+              <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-8">
+                <Sparkles className="h-4 w-4" />
+                AI-powered quiz generation
+              </motion.div>
+
               <motion.h1
                 variants={fadeUp}
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold mb-4 sm:mb-6 leading-[1.1]"
+                className="text-display-lg font-black mb-6 leading-[1.05]"
               >
                 Your notes,
                 <br />
-                <span className="text-primary">transformed into quizzes</span>
+                <span className="text-primary">transformed</span>
               </motion.h1>
 
               <motion.p
                 variants={fadeUp}
-                className="text-base sm:text-lg text-muted-foreground mb-6 sm:mb-8 max-w-lg"
+                className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-lg leading-relaxed"
               >
-                Upload your study materials. Synapse generates questions.
-                Quiz yourself or compete with your group.
+                Upload study materials. Generate quizzes with AI.
+                Compete with your group or study at your own pace.
               </motion.p>
 
               <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-3">
-                <Button size="lg" onClick={() => navigate('/auth')} className="gap-2 w-full sm:w-auto">
-                  Start studying free <ArrowRight className="h-4 w-4" />
+                <Button size="lg" onClick={() => navigate('/auth')} className="gap-2 h-14 px-8 text-base font-semibold w-full sm:w-auto">
+                  Start studying free <ArrowRight className="h-5 w-5" />
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => navigate('/auth')} className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" onClick={() => navigate('/auth')} className="h-14 px-8 text-base font-medium w-full sm:w-auto">
                   Join a room
                 </Button>
               </motion.div>
 
               <motion.div
                 variants={fadeUp}
-                className="flex gap-6 mt-8 sm:mt-10 pt-6 sm:pt-8 border-t border-border/50"
+                className="flex gap-8 mt-12 pt-8 border-t border-border/50"
               >
                 <QuickStat value="3" label="quiz modes" />
                 <QuickStat value="PDF" label="& text support" />
@@ -118,38 +123,43 @@ const Index = () => {
 
             {/* Mockup */}
             <motion.div variants={fadeUp} className="hidden lg:block">
-              <div className="bg-card rounded-2xl border shadow-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <div className="font-medium text-sm">Biology 101</div>
-                    <div className="text-xs text-muted-foreground">
-                      12 questions • Study mode
+              <div className="relative">
+                {/* Floating decorative element */}
+                <div className="absolute -top-6 -right-6 h-24 w-24 rounded-2xl bg-primary/10 border border-primary/20 rotate-12 animate-float" />
+                
+                <div className="bg-card rounded-2xl border border-border/50 shadow-2xl p-8 relative">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <BookOpen className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <div className="font-semibold">Biology 101</div>
+                      <div className="text-sm text-muted-foreground">
+                        12 questions • Study mode
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="p-3 rounded-lg bg-muted/50 border">
-                  <p className="text-sm font-medium mb-2">
-                    What is the powerhouse of the cell?
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {['Nucleus', 'Mitochondria', 'Ribosome', 'Golgi body'].map(
-                      (opt, i) => (
-                        <div
-                          key={opt}
-                          className={`text-xs p-2 rounded-md border ${
-                            i === 1
-                              ? 'bg-success/10 border-success/30 text-success'
-                              : 'bg-background'
-                          }`}
-                        >
-                          {opt}
-                        </div>
-                      )
-                    )}
+                  <div className="p-5 rounded-xl bg-muted/50 border border-border/50">
+                    <p className="font-serif text-lg mb-4">
+                      What is the powerhouse of the cell?
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {['Nucleus', 'Mitochondria', 'Ribosome', 'Golgi body'].map(
+                        (opt, i) => (
+                          <div
+                            key={opt}
+                            className={`text-sm p-3 rounded-lg border transition-all ${
+                              i === 1
+                                ? 'bg-success/10 border-success/30 text-success font-medium scale-[1.02]'
+                                : 'bg-background border-border/50'
+                            }`}
+                          >
+                            {opt}
+                          </div>
+                        )
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -161,22 +171,22 @@ const Index = () => {
       {/* How it works */}
       <motion.section
         {...scrollAnimationProps}
-        className="py-16 sm:py-24 border-t border-border bg-muted/30"
+        className="py-20 sm:py-32 border-t border-border/30"
       >
-        <div className="container max-w-5xl px-4 sm:px-6">
-          <motion.div variants={fadeUp} className="text-center mb-10 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl font-semibold mb-3 sm:mb-4">
+        <div className="container max-w-5xl px-4 sm:px-8">
+          <motion.div variants={fadeUp} className="text-center mb-16">
+            <h2 className="font-black mb-4">
               From notes to knowledge
             </h2>
-            <p className="text-muted-foreground max-w-lg mx-auto text-sm sm:text-base">
+            <p className="text-muted-foreground max-w-lg mx-auto text-lg">
               Three simple steps. No setup friction.
             </p>
           </motion.div>
 
-          <motion.div variants={stagger} className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-            <ProcessCard icon={Users} title="Create or join" description="Private study rooms with shareable codes." />
-            <ProcessCard icon={Upload} title="Upload materials" description="PDFs, notes, or pasted text." />
-            <ProcessCard icon={Sparkles} title="Generate quizzes" description="AI-crafted questions from your content." />
+          <motion.div variants={stagger} className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 lg:gap-8">
+            <ProcessCard step={1} icon={Users} title="Create or join" description="Private study rooms with shareable codes." />
+            <ProcessCard step={2} icon={Upload} title="Upload materials" description="PDFs, notes, or pasted text." />
+            <ProcessCard step={3} icon={Sparkles} title="Generate quizzes" description="AI-crafted questions from your content." />
           </motion.div>
         </div>
       </motion.section>
@@ -184,20 +194,20 @@ const Index = () => {
       {/* Modes */}
       <motion.section
         {...scrollAnimationProps}
-        className="py-16 sm:py-24 border-t border-border"
+        className="py-20 sm:py-32 border-t border-border/30"
       >
-        <div className="container max-w-5xl px-4 sm:px-6">
-          <motion.div variants={fadeUp} className="text-center mb-10 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl font-semibold mb-3 sm:mb-4">Three ways to study</h2>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Choose what matches your learning style.
+        <div className="container max-w-5xl px-4 sm:px-8">
+          <motion.div variants={fadeUp} className="text-center mb-16">
+            <h2 className="font-black mb-4">Three ways to study</h2>
+            <p className="text-muted-foreground text-lg">
+              Choose what matches your goal.
             </p>
           </motion.div>
 
-          <motion.div variants={stagger} className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-            <ModeCard icon={BookOpen} mode="Study" features={['Instant feedback', 'Learn at your pace']} />
-            <ModeCard icon={Trophy} mode="Challenge" featured features={['Leaderboards', 'Compete with friends']} />
-            <ModeCard icon={Timer} mode="Exam" features={['One attempt', 'Timed sessions']} />
+          <motion.div variants={stagger} className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <ModeCard icon={BookOpen} mode="Study" tint="mode-study" features={['Instant feedback', 'Learn at your pace', 'Review explanations']} />
+            <ModeCard icon={Trophy} mode="Challenge" tint="mode-challenge" featured features={['Leaderboards', 'Timed rounds', 'Compete with friends']} />
+            <ModeCard icon={Timer} mode="Exam" tint="mode-exam" features={['One attempt only', 'No answer review', 'Real test conditions']} />
           </motion.div>
         </div>
       </motion.section>
@@ -205,17 +215,17 @@ const Index = () => {
       {/* CTA */}
       <motion.section
         {...scrollAnimationProps}
-        className="py-16 sm:py-20 border-t border-border text-center px-4"
+        className="py-20 sm:py-28 border-t border-border/30 text-center px-4"
       >
-        <motion.h2 variants={fadeUp} className="text-2xl sm:text-3xl font-semibold mb-3 sm:mb-4">
+        <motion.h2 variants={fadeUp} className="font-black mb-4">
           Ready to study smarter?
         </motion.h2>
-        <motion.p variants={fadeUp} className="text-muted-foreground mb-6 sm:mb-8 text-sm sm:text-base">
+        <motion.p variants={fadeUp} className="text-muted-foreground mb-10 text-lg">
           Free to start. No credit card.
         </motion.p>
         <motion.div variants={fadeUp}>
-          <Button size="lg" onClick={() => navigate('/auth')} className="gap-2 w-full sm:w-auto">
-            Create your first room <ArrowRight className="h-4 w-4" />
+          <Button size="lg" onClick={() => navigate('/auth')} className="gap-2 h-14 px-8 text-base font-semibold w-full sm:w-auto">
+            Create your first room <ArrowRight className="h-5 w-5" />
           </Button>
         </motion.div>
       </motion.section>
@@ -224,9 +234,9 @@ const Index = () => {
       <InstallSection />
 
       {/* Footer */}
-      <footer className="py-6 border-t border-border text-center">
-        <p className="text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Synapse. Built for students.
+      <footer className="py-8 border-t border-border/30 text-center">
+        <p className="text-sm text-muted-foreground">
+          © {new Date().getFullYear()} Synapse. Built for students who mean it.
         </p>
       </footer>
 
@@ -239,60 +249,81 @@ const Index = () => {
 
 const QuickStat = ({ value, label }: { value: string; label: string }) => (
   <div>
-    <div className="text-base sm:text-lg font-semibold">{value}</div>
-    <div className="text-xs text-muted-foreground">{label}</div>
+    <div className="text-2xl font-black text-foreground">{value}</div>
+    <div className="text-sm text-muted-foreground">{label}</div>
   </div>
 );
 
 const ProcessCard = ({
+  step,
   icon: Icon,
   title,
   description,
 }: {
+  step: number;
   icon: React.ElementType;
   title: string;
   description: string;
 }) => (
   <motion.div
     variants={fadeUp}
-    whileHover={{ y: -4 }}
-    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-    className="p-5 sm:p-6 rounded-xl border bg-card hover:shadow-md transition-shadow"
+    whileHover={{ y: -6, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
+    className="relative p-7 rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-xl transition-shadow diagonal-accent"
   >
-    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3 sm:mb-4">
-      <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+    <div className="absolute top-6 right-6 text-5xl font-black text-muted/50 leading-none">
+      {step}
     </div>
-    <h3 className="font-semibold mb-1.5 sm:mb-2 text-sm sm:text-base">{title}</h3>
-    <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
+    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5">
+      <Icon className="h-6 w-6 text-primary" />
+    </div>
+    <h3 className="font-bold text-lg mb-2">{title}</h3>
+    <p className="text-muted-foreground">{description}</p>
   </motion.div>
 );
 
 const ModeCard = ({
   icon: Icon,
   mode,
+  tint,
   features,
   featured,
 }: {
   icon: React.ElementType;
   mode: string;
+  tint: string;
   features: string[];
   featured?: boolean;
 }) => (
   <motion.div
     variants={fadeUp}
     whileHover={{ scale: featured ? 1.03 : 1.01 }}
-    className={`p-5 sm:p-6 rounded-xl border bg-card transition-shadow ${
-      featured ? 'border-warning/30 ring-1 ring-warning/10 shadow-lg' : 'hover:shadow-md'
+    className={`relative p-7 rounded-2xl border bg-card/80 backdrop-blur-sm transition-all ${
+      featured
+        ? 'border-mode-challenge/30 ring-1 ring-mode-challenge/10 shadow-xl'
+        : 'border-border/50 hover:shadow-lg'
     }`}
   >
-    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-muted flex items-center justify-center mb-3 sm:mb-4">
-      <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
+    {featured && (
+      <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-mode-challenge text-mode-challenge-foreground text-xs font-bold">
+        POPULAR
+      </div>
+    )}
+    <div className={`h-12 w-12 rounded-xl flex items-center justify-center mb-5 ${
+      tint === 'mode-study' ? 'bg-mode-study/10' :
+      tint === 'mode-challenge' ? 'bg-mode-challenge/10' :
+      'bg-mode-exam/10'
+    }`}>
+      <Icon className={`h-6 w-6 ${
+        tint === 'mode-study' ? 'text-mode-study' :
+        tint === 'mode-challenge' ? 'text-mode-challenge' :
+        'text-mode-exam'
+      }`} />
     </div>
-    <h3 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">{mode} mode</h3>
-    <ul className="space-y-1.5 sm:space-y-2">
+    <h3 className="font-bold text-lg mb-4">{mode} mode</h3>
+    <ul className="space-y-2.5">
       {features.map((f) => (
-        <li key={f} className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-          <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-success flex-shrink-0" />
+        <li key={f} className="flex items-center gap-2.5 text-sm text-muted-foreground">
+          <Check className="h-4 w-4 text-success flex-shrink-0" />
           {f}
         </li>
       ))}
