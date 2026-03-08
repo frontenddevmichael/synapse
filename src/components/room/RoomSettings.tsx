@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Settings, Trash2, UserMinus, BookOpen, Trophy, FileText } from 'lucide-react';
+import { Settings, Trash2, UserMinus, BookOpen, Trophy, FileText, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -38,6 +39,7 @@ export function RoomSettings({
 }: RoomSettingsProps) {
   const { toast } = useToast();
   const [currentMode, setCurrentMode] = useState(mode);
+  const [currentName, setCurrentName] = useState(roomName);
   const [leaderboard, setLeaderboard] = useState(leaderboardEnabled);
   const [isSaving, setIsSaving] = useState(false);
   const isOwner = currentUserId === ownerId;
@@ -48,7 +50,7 @@ export function RoomSettings({
     setIsSaving(true);
     const { error } = await supabase
       .from('rooms')
-      .update({ mode: currentMode, leaderboard_enabled: leaderboard })
+      .update({ name: currentName.trim(), mode: currentMode, leaderboard_enabled: leaderboard })
       .eq('id', roomId);
 
     if (error) {
@@ -92,6 +94,10 @@ export function RoomSettings({
           <CardDescription>Manage room mode, leaderboard, and members</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Room Name</Label>
+            <Input value={currentName} onChange={(e) => setCurrentName(e.target.value)} className="h-11" />
+          </div>
           <div className="space-y-2">
             <Label>Room Mode</Label>
             <Select value={currentMode} onValueChange={(v) => setCurrentMode(v as any)}>

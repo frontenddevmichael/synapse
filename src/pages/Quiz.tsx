@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, CheckCircle, XCircle, Loader2, AlertTriangle, Lock, Star, Zap } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle, XCircle, Loader2, AlertTriangle, Lock, Star, Zap, Bookmark, BookmarkCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { QuizTimer } from '@/components/quiz/QuizTimer';
 import { StudyModeAnswer } from '@/components/quiz/StudyModeAnswer';
 import { useGamification } from '@/hooks/useGamification';
+import { useActiveSession } from '@/hooks/useActiveSession';
 import { AchievementToast } from '@/components/gamification/AchievementToast';
 import { fadeUp, stagger } from '@/lib/motion';
 
@@ -77,10 +78,32 @@ const QuizPage = () => {
   const [effectiveTimeLimit, setEffectiveTimeLimit] = useState<number | null>(null);
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(new Set());
   const [hasCompletedAttempt, setHasCompletedAttempt] = useState(false);
+  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<string>>(new Set());
+
+  // Fetch bookmarks for current user
+  const fetchBookmarks = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('bookmarked_questions')
+      .select('question_id')
+      .eq('user_id', user.id);
+    if (data) setBookmarkedQuestions(new Set(data.map(b => b.question_id)));
+  };
+
+  const toggleBookmark = async (questionId: string) => {
+    if (!user) return;
+    if (bookmarkedQuestions.has(questionId)) {
+      await supabase.from('bookmarked_questions').delete().eq('user_id', user.id).eq('question_id', questionId);
+      setBookmarkedQuestions(prev => { const next = new Set(prev); next.delete(questionId); return next; });
+    } else {
+      await supabase.from('bookmarked_questions').insert({ user_id: user.id, question_id: questionId });
+      setBookmarkedQuestions(prev => new Set(prev).add(questionId));
+    }
+  };
 
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
-    if (quizId) fetchQuizData();
+    if (quizId) { fetchQuizData(); fetchBookmarks(); }
   }, [user, quizId, navigate]);
 
   const fetchQuizData = async () => {
@@ -114,12 +137,20 @@ const QuizPage = () => {
     setIsLoading(false);
   };
 
+  // Active session tracking
+  const { startSession, updateProgress, endSession } = useActiveSession({
+    quizId: quizId || '',
+    roomId: quiz?.room_id || '',
+    enabled: !!attempt && attempt.status === 'in_progress',
+  });
+
   const startQuiz = async () => {
     if (!quizId || !user) return;
     if (roomMode === 'exam' && hasCompletedAttempt) { toast({ title: 'Quiz already completed', description: 'Exam mode only allows one attempt.', variant: 'destructive' }); return; }
     const { data, error } = await supabase.from('quiz_attempts').insert({ quiz_id: quizId, user_id: user.id, status: 'in_progress', started_at: new Date().toISOString(), total_questions: questions.length, answers: {} }).select().single();
     if (error) { toast({ title: 'Failed to start quiz', description: error.message, variant: 'destructive' }); return; }
     setAttempt(data as QuizAttempt); setAnsweredQuestions(new Set());
+    startSession();
   };
 
   const selectAnswer = async (questionId: string, answer: string) => {
@@ -127,6 +158,7 @@ const QuizPage = () => {
     setAnswers(newAnswers);
     if (roomMode === 'study') setAnsweredQuestions(prev => new Set(prev).add(questionId));
     if (attempt) await supabase.from('quiz_attempts').update({ answers: newAnswers }).eq('id', attempt.id);
+    updateProgress(currentQuestionIndex, Object.keys(newAnswers).length);
   };
 
   const handleTimeUp = useCallback(async () => {
@@ -156,6 +188,7 @@ const QuizPage = () => {
       }
     } catch (err) { console.error('Gamification update error:', err); }
     setAttempt({ ...attempt, status: 'completed', score }); setShowResults(true); setIsSubmitting(false);
+    endSession();
     toast({ title: 'Quiz completed!', description: `You scored ${score}%` });
   };
 
@@ -365,9 +398,24 @@ const QuizPage = () => {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="w-full max-w-2xl"
           >
-            <p className="font-serif text-2xl sm:text-3xl lg:text-4xl leading-relaxed mb-10 text-center text-balance">
-              {currentQuestion.question_text}
-            </p>
+            <div className="flex items-start justify-between mb-10">
+              <p className="font-serif text-2xl sm:text-3xl lg:text-4xl leading-relaxed text-center text-balance flex-1">
+                {currentQuestion.question_text}
+              </p>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => toggleBookmark(currentQuestion.id)}
+                className="shrink-0 ml-4 mt-1"
+                title={bookmarkedQuestions.has(currentQuestion.id) ? 'Remove bookmark' : 'Bookmark question'}
+              >
+                {bookmarkedQuestions.has(currentQuestion.id) ? (
+                  <BookmarkCheck className="h-5 w-5 text-primary" />
+                ) : (
+                  <Bookmark className="h-5 w-5 text-muted-foreground" />
+                )}
+              </Button>
+            </div>
 
             <div className="space-y-3 mb-10">
               {currentQuestion.options.map((option, i) => {
@@ -411,20 +459,22 @@ const QuizPage = () => {
               <StudyModeAnswer options={currentQuestion.options} selectedAnswer={answers[currentQuestion.id]} correctAnswer={currentQuestion.correct_answer} explanation={currentQuestion.explanation} showFeedback={true} />
             )}
 
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <Button variant="ghost" onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))} disabled={currentQuestionIndex === 0} className="font-semibold">
                 Previous
               </Button>
-              {currentQuestionIndex === questions.length - 1 ? (
-                <Button onClick={submitQuiz} disabled={isSubmitting || Object.keys(answers).length < questions.length} className="font-bold h-11 px-8">
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Submit Quiz
-                </Button>
-              ) : (
-                <Button onClick={() => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))} className="font-semibold">
-                  Next
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {currentQuestionIndex === questions.length - 1 ? (
+                  <Button onClick={submitQuiz} disabled={isSubmitting || Object.keys(answers).length < questions.length} className="font-bold h-11 px-8">
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Submit Quiz
+                  </Button>
+                ) : (
+                  <Button onClick={() => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))} className="font-semibold">
+                    Next
+                  </Button>
+                )}
+              </div>
             </div>
           </motion.div>
         )}

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users, BookOpen, Trophy, LogOut, Settings, BarChart3, User, Zap, Flame } from 'lucide-react';
+import { Plus, Users, BookOpen, Trophy, LogOut, Settings, BarChart3, User, Zap, Flame, Bookmark } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
@@ -119,11 +119,6 @@ const Dashboard = () => {
 
   const handleSignOut = async () => { await signOut(); navigate('/auth'); };
 
-  const handleDeleteRoom = async (roomId: string) => {
-    const { error } = await supabase.from('rooms').delete().eq('id', roomId);
-    if (error) { toast({ title: 'Failed to delete room', description: error.message, variant: 'destructive' }); }
-    else { toast({ title: 'Room deleted' }); fetchRooms(); }
-  };
 
   const getModeClass = (mode: string) => {
     const styles: Record<string, string> = {
@@ -172,6 +167,9 @@ const Dashboard = () => {
           <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} className="text-muted-foreground hover:text-foreground">
             <User className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/bookmarks')} className="text-muted-foreground hover:text-foreground" title="Study Deck">
+            <Bookmark className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="icon" onClick={() => navigate('/preferences')} className="text-muted-foreground hover:text-foreground">
             <Settings className="h-4 w-4" />

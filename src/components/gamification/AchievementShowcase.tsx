@@ -48,19 +48,19 @@ const iconMap: Record<string, LucideIcon> = {
 
 const categoryColors: Record<string, { bg: string; border: string; text: string }> = {
   offensive: { 
-    bg: 'bg-orange-500/10', 
-    border: 'border-orange-500/30', 
-    text: 'text-orange-500' 
+    bg: 'bg-warning/10', 
+    border: 'border-warning/30', 
+    text: 'text-warning' 
   },
   defensive: { 
-    bg: 'bg-blue-500/10', 
-    border: 'border-blue-500/30', 
-    text: 'text-blue-400' 
+    bg: 'bg-mode-study/10', 
+    border: 'border-mode-study/30', 
+    text: 'text-mode-study' 
   },
   special: { 
-    bg: 'bg-purple-500/10', 
-    border: 'border-purple-500/30', 
-    text: 'text-purple-400' 
+    bg: 'bg-gold/10', 
+    border: 'border-gold/30', 
+    text: 'text-gold' 
   },
   general: { 
     bg: 'bg-primary/10', 
@@ -83,19 +83,19 @@ const rarityStyles: Record<string, { ring: string; glow: string; badge: string }
     badge: 'bg-muted text-muted-foreground' 
   },
   rare: { 
-    ring: 'ring-blue-400/50', 
-    glow: 'shadow-blue-400/20 shadow-lg', 
-    badge: 'bg-blue-500/20 text-blue-400' 
+    ring: 'ring-mode-study/50', 
+    glow: 'shadow-lg', 
+    badge: 'bg-mode-study/20 text-mode-study' 
   },
   epic: { 
-    ring: 'ring-purple-400/50', 
-    glow: 'shadow-purple-400/30 shadow-lg', 
-    badge: 'bg-purple-500/20 text-purple-400' 
+    ring: 'ring-gold/50', 
+    glow: 'shadow-lg', 
+    badge: 'bg-gold/20 text-gold' 
   },
   legendary: { 
-    ring: 'ring-yellow-400/50', 
-    glow: 'shadow-yellow-400/40 shadow-xl legendary-glow', 
-    badge: 'bg-yellow-500/20 text-yellow-400' 
+    ring: 'ring-gold/50', 
+    glow: 'shadow-xl legendary-glow', 
+    badge: 'bg-gold/20 text-gold' 
   },
 };
 
@@ -150,9 +150,9 @@ export function AchievementShowcase({ achievements, userAchievements, maxDisplay
                     {rarity !== 'common' && (
                       <div className={cn(
                         'absolute -top-1 -right-1 w-3 h-3 rounded-full',
-                        rarity === 'rare' && 'bg-blue-400',
-                        rarity === 'epic' && 'bg-purple-400',
-                        rarity === 'legendary' && 'bg-yellow-400 animate-pulse'
+                        rarity === 'rare' && 'bg-mode-study',
+                        rarity === 'epic' && 'bg-gold',
+                        rarity === 'legendary' && 'bg-gold animate-pulse'
                       )} />
                     )}
                   </div>
