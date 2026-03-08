@@ -188,6 +188,7 @@ const QuizPage = () => {
       }
     } catch (err) { console.error('Gamification update error:', err); }
     setAttempt({ ...attempt, status: 'completed', score }); setShowResults(true); setIsSubmitting(false);
+    endSession();
     toast({ title: 'Quiz completed!', description: `You scored ${score}%` });
   };
 
