@@ -95,6 +95,10 @@ export function RoomSettings({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
+            <Label>Room Name</Label>
+            <Input value={currentName} onChange={(e) => setCurrentName(e.target.value)} className="h-11" />
+          </div>
+          <div className="space-y-2">
             <Label>Room Mode</Label>
             <Select value={currentMode} onValueChange={(v) => setCurrentMode(v as any)}>
               <SelectTrigger>
