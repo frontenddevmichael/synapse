@@ -96,6 +96,12 @@ const Preferences = () => {
                 <CardDescription>These settings apply to new quizzes you take</CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
+                <div className="p-4 rounded-xl bg-warning/5 border border-warning/20">
+                  <p className="text-sm text-warning font-medium">⚠️ Room rules override these defaults</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    When a room's mode is set to Challenge or Exam, the room's timer and answer-reveal settings take priority over your preferences.
+                  </p>
+                </div>
                 <div className="space-y-2">
                   <Label className="font-semibold">Default Difficulty</Label>
                   <Select value={preferences.default_difficulty} onValueChange={(value: any) => setPreferences({ ...preferences, default_difficulty: value })}>
