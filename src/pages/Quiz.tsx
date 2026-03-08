@@ -17,6 +17,7 @@ import { StudyModeAnswer } from '@/components/quiz/StudyModeAnswer';
 import { useGamification } from '@/hooks/useGamification';
 import { useActiveSession } from '@/hooks/useActiveSession';
 import { AchievementToast } from '@/components/gamification/AchievementToast';
+import { LevelUpOverlay } from '@/components/gamification/LevelUpOverlay';
 import { fadeUp, stagger } from '@/lib/motion';
 
 interface Quiz {
@@ -279,7 +280,7 @@ const QuizPage = () => {
     const correctCount = questions.filter(q => answers[q.id] === q.correct_answer).length;
     return (
       <div className={`min-h-screen flex flex-col bg-background noise-bg ${getModeBackground()}`}>
-        {leveledUp && <div className="level-up-flash" />}
+        <LevelUpOverlay level={newLevel || 1} show={leveledUp} onClose={() => setLeveledUp(false)} />
         {newAchievement && <AchievementToast name={newAchievement.name} description={newAchievement.description} icon={newAchievement.icon} xpReward={newAchievement.xp_reward} onClose={clearNewAchievement} />}
         <header className="flex items-center justify-between p-4 sm:p-6">
           <div className="flex items-center gap-4">

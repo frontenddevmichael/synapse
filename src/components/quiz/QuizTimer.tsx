@@ -38,24 +38,26 @@ export const QuizTimer = ({ timeLimitMinutes, startedAt, onTimeUp, isActive }: Q
 
   const minutes = Math.floor(timeRemaining / 60);
   const seconds = timeRemaining % 60;
-  const isLowTime = timeRemaining <= 60;
+  const isUrgent = timeRemaining <= 10;
   const isCriticalTime = timeRemaining <= 30;
+  const isLowTime = timeRemaining <= 60;
 
   return (
     <div
       className={cn(
         'flex items-center gap-2 px-3 py-1.5 rounded-full font-mono text-sm font-medium transition-colors',
-        isCriticalTime && 'bg-destructive/20 text-destructive animate-pulse',
+        isUrgent && 'bg-destructive/20 text-destructive timer-urgent',
+        isCriticalTime && !isUrgent && 'bg-destructive/20 text-destructive animate-pulse',
         isLowTime && !isCriticalTime && 'bg-warning/20 text-warning',
         !isLowTime && 'bg-muted text-foreground'
       )}
     >
       {isCriticalTime ? (
-        <AlertTriangle className="h-4 w-4" />
+        <AlertTriangle className={cn('h-4 w-4', isUrgent && 'animate-bounce')} />
       ) : (
         <Clock className="h-4 w-4" />
       )}
-      <span>
+      <span className={cn(isUrgent && 'text-base font-black')}>
         {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
       </span>
     </div>

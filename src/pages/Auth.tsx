@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,18 @@ const Auth = () => {
 
   const handleSignUp = async (data: SignUpFormData) => {
     setIsLoading(true);
+    // Check username uniqueness first
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('username', data.username)
+      .maybeSingle();
+    if (existing) {
+      setIsLoading(false);
+      signUpForm.setError('username', { message: 'This username is already taken. Choose another.' });
+      toast({ title: 'Username taken', description: 'Please choose a different username.', variant: 'destructive' });
+      return;
+    }
     const { error } = await signUp(data.email, data.password, data.username);
     setIsLoading(false);
     if (error) {

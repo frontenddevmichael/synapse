@@ -29,6 +29,8 @@ import { useToast } from '@/hooks/use-toast';
 import { extractTextFromPDF, formatFileSize } from '@/lib/pdfParser';
 import { QuestionCountSelector } from '@/components/quiz/QuestionCountSelector';
 import { RoomSettings } from '@/components/room/RoomSettings';
+import { ActiveUsersIndicator } from '@/components/realtime/ActiveUsersIndicator';
+import { QuizGeneratingOverlay } from '@/components/quiz/QuizGeneratingOverlay';
 import { fadeUp, staggerFast } from '@/lib/motion';
 
 interface Room {
@@ -388,6 +390,9 @@ const RoomPage = () => {
                   <Users className="h-3.5 w-3.5" />
                   {members.length} member{members.length !== 1 ? 's' : ''}
                 </span>
+                {quizzes.length > 0 && (
+                  <ActiveUsersIndicator quizId={quizzes[0]?.id || ''} roomId={room.id} />
+                )}
                 <span className="text-sm text-muted-foreground flex items-center gap-1.5">
                   <Sparkles className="h-3.5 w-3.5" />
                   {quizzes.length} quiz{quizzes.length !== 1 ? 'zes' : ''}
@@ -505,7 +510,18 @@ const RoomPage = () => {
             {/* Quizzes Tab */}
             <TabsContent value="quizzes" className="space-y-6">
               {/* Quiz Generator */}
-              {documents.length > 0 && (
+              {isGenerating && (
+                <motion.div {...itemProps}>
+                  <QuizGeneratingOverlay
+                    isGenerating={isGenerating}
+                    documentName={documents.find(d => d.id === selectedDoc)?.name || 'Document'}
+                    questionCount={questionCount}
+                    difficulty={quizDifficulty}
+                  />
+                </motion.div>
+              )}
+
+              {documents.length > 0 && !isGenerating && (
                 <motion.div {...itemProps} className="bento-card">
                   <div className="flex items-center gap-3 mb-5">
                     <div className="p-2.5 rounded-xl bg-primary/10">
