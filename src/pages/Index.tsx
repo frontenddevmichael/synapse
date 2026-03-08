@@ -229,7 +229,7 @@ const Index = () => {
       </motion.section>
 
       {/* Install Section */}
-      <InstallSection />
+      <PWAInstall variant="section" />
 
       {/* Footer */}
       <footer className="py-8 border-t border-border/30 text-center">
