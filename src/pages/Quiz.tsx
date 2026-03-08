@@ -262,11 +262,27 @@ const QuizPage = () => {
 
     // Wire gamification: update XP, streaks, achievements, daily activity
     try {
+      // Get previous best score for comeback detection
+      const { data: prevAttempts } = await supabase
+        .from('quiz_attempts')
+        .select('score')
+        .eq('quiz_id', quizId)
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .neq('id', attempt.id)
+        .order('completed_at', { ascending: false })
+        .limit(1);
+
+      const previousScore = prevAttempts?.[0]?.score ?? null;
+
       const gamResult = await updateStatsOnQuizComplete(
         correctCount,
         questions.length,
         score,
-        attempt.started_at || new Date().toISOString()
+        attempt.started_at || new Date().toISOString(),
+        questions.map(q => ({ id: q.id, correct_answer: q.correct_answer })),
+        answers,
+        previousScore
       );
 
       if (gamResult) {
