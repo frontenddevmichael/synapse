@@ -141,16 +141,19 @@ export function AnalyticsDashboard() {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <StreakBadgeEnhanced
-              offensiveStreak={0}
-              defensiveStreak={0}
+              offensiveStreak={stats?.hot_streak || 0}
+              defensiveStreak={stats?.best_hot_streak || 0}
               dailyStreak={stats?.streak_days || 0}
-              hasStreakFreeze={false}
+              hasStreakFreeze={stats?.streak_freeze_available || false}
               compact
             />
             <div className="mt-3 flex items-center gap-2">
               <Flame className="h-4 w-4 text-orange-500" />
               <span className="text-sm text-muted-foreground">
                 {stats?.streak_days || 0} day streak
+                {(stats?.xp_multiplier || 1) > 1 && (
+                  <span className="ml-1 text-primary">({stats?.xp_multiplier}x XP)</span>
+                )}
               </span>
             </div>
           </CardContent>
