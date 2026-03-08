@@ -16,9 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
-import { InstallPrompt } from '@/components/pwa/InstallPrompt';
-import { InstallSection } from '@/components/pwa/InstallSection';
-import { InstallButton } from '@/components/pwa/InstallButton';
+import { PWAInstall } from '@/components/pwa/PWAInstall';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { fadeUp, stagger, viewport, staggerSlow } from '@/lib/motion';
 
@@ -61,7 +59,7 @@ const Index = () => {
       <header className="flex items-center justify-between px-4 sm:px-8 py-5 bg-background/60 backdrop-blur-xl sticky top-0 z-50 border-b border-border/30">
         <Logo size="lg" />
         <div className="flex items-center gap-3">
-          <InstallButton className="hidden sm:inline-flex" />
+          
           <ThemeToggle />
           <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="hidden sm:inline-flex font-medium">
             Sign in
@@ -231,7 +229,7 @@ const Index = () => {
       </motion.section>
 
       {/* Install Section */}
-      <InstallSection />
+      <PWAInstall variant="section" />
 
       {/* Footer */}
       <footer className="py-8 border-t border-border/30 text-center">
@@ -241,7 +239,7 @@ const Index = () => {
       </footer>
 
       {showInstallBanner && (
-        <InstallPrompt variant="banner" onClose={() => setShowInstallBanner(false)} />
+        <PWAInstall variant="banner" onClose={() => setShowInstallBanner(false)} />
       )}
     </div>
   );

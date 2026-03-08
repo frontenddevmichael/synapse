@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users, BookOpen, Trophy, LogOut, Settings, BarChart3, User, Trash2, Zap, Flame } from 'lucide-react';
+import { Plus, Users, BookOpen, Trophy, LogOut, Settings, BarChart3, User, Zap, Flame } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,10 +11,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -348,35 +344,10 @@ const Dashboard = () => {
                               </h3>
                               <p className="font-mono text-xs text-muted-foreground mt-1">{room.code}</p>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className={`${getModeClass(room.mode)} text-xs font-semibold gap-1`}>
-                                {getModeIcon(room.mode)}
-                                {room.mode}
-                              </Badge>
-                              {room.owner_id === user?.id && (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon"
-                                      className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                      onClick={(e) => e.stopPropagation()}>
-                                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Delete "{room.name}"?</AlertDialogTitle>
-                                      <AlertDialogDescription>This permanently deletes the room, all documents, quizzes, and scores.</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => handleDeleteRoom(room.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                        Delete
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              )}
-                            </div>
+                            <Badge variant="outline" className={`${getModeClass(room.mode)} text-xs font-semibold gap-1`}>
+                              {getModeIcon(room.mode)}
+                              {room.mode}
+                            </Badge>
                           </div>
                         </div>
                       </motion.div>
