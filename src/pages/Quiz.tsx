@@ -137,12 +137,20 @@ const QuizPage = () => {
     setIsLoading(false);
   };
 
+  // Active session tracking
+  const { startSession, updateProgress, endSession } = useActiveSession({
+    quizId: quizId || '',
+    roomId: quiz?.room_id || '',
+    enabled: !!attempt && attempt.status === 'in_progress',
+  });
+
   const startQuiz = async () => {
     if (!quizId || !user) return;
     if (roomMode === 'exam' && hasCompletedAttempt) { toast({ title: 'Quiz already completed', description: 'Exam mode only allows one attempt.', variant: 'destructive' }); return; }
     const { data, error } = await supabase.from('quiz_attempts').insert({ quiz_id: quizId, user_id: user.id, status: 'in_progress', started_at: new Date().toISOString(), total_questions: questions.length, answers: {} }).select().single();
     if (error) { toast({ title: 'Failed to start quiz', description: error.message, variant: 'destructive' }); return; }
     setAttempt(data as QuizAttempt); setAnsweredQuestions(new Set());
+    startSession();
   };
 
   const selectAnswer = async (questionId: string, answer: string) => {
