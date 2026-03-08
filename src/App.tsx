@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Room from "./pages/Room";
 import Quiz from "./pages/Quiz";
 import Preferences from "./pages/Preferences";
+import Bookmarks from "./pages/Bookmarks";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 
