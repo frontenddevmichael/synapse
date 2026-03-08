@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Settings, Trash2, UserMinus, BookOpen, Trophy, FileText } from 'lucide-react';
+import { Settings, Trash2, UserMinus, BookOpen, Trophy, FileText, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
