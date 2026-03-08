@@ -173,6 +173,9 @@ const Dashboard = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} className="text-muted-foreground hover:text-foreground">
             <User className="h-4 w-4" />
           </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/bookmarks')} className="text-muted-foreground hover:text-foreground" title="Study Deck">
+            <Bookmark className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => navigate('/preferences')} className="text-muted-foreground hover:text-foreground">
             <Settings className="h-4 w-4" />
           </Button>
