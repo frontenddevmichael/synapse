@@ -510,7 +510,18 @@ const RoomPage = () => {
             {/* Quizzes Tab */}
             <TabsContent value="quizzes" className="space-y-6">
               {/* Quiz Generator */}
-              {documents.length > 0 && (
+              {isGenerating && (
+                <motion.div {...itemProps}>
+                  <QuizGeneratingOverlay
+                    isGenerating={isGenerating}
+                    documentName={documents.find(d => d.id === selectedDoc)?.name || 'Document'}
+                    questionCount={questionCount}
+                    difficulty={quizDifficulty}
+                  />
+                </motion.div>
+              )}
+
+              {documents.length > 0 && !isGenerating && (
                 <motion.div {...itemProps} className="bento-card">
                   <div className="flex items-center gap-3 mb-5">
                     <div className="p-2.5 rounded-xl bg-primary/10">
