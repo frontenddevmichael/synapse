@@ -119,11 +119,6 @@ const Dashboard = () => {
 
   const handleSignOut = async () => { await signOut(); navigate('/auth'); };
 
-  const handleDeleteRoom = async (roomId: string) => {
-    const { error } = await supabase.from('rooms').delete().eq('id', roomId);
-    if (error) { toast({ title: 'Failed to delete room', description: error.message, variant: 'destructive' }); }
-    else { toast({ title: 'Room deleted' }); fetchRooms(); }
-  };
 
   const getModeClass = (mode: string) => {
     const styles: Record<string, string> = {
