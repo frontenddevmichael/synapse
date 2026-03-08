@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { QuizTimer } from '@/components/quiz/QuizTimer';
 import { StudyModeAnswer } from '@/components/quiz/StudyModeAnswer';
 import { useGamification } from '@/hooks/useGamification';
+import { useActiveSession } from '@/hooks/useActiveSession';
 import { AchievementToast } from '@/components/gamification/AchievementToast';
 import { fadeUp, stagger } from '@/lib/motion';
 
