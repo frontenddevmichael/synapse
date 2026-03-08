@@ -83,19 +83,19 @@ const rarityStyles: Record<string, { ring: string; glow: string; badge: string }
     badge: 'bg-muted text-muted-foreground' 
   },
   rare: { 
-    ring: 'ring-blue-400/50', 
-    glow: 'shadow-blue-400/20 shadow-lg', 
-    badge: 'bg-blue-500/20 text-blue-400' 
+    ring: 'ring-mode-study/50', 
+    glow: 'shadow-lg', 
+    badge: 'bg-mode-study/20 text-mode-study' 
   },
   epic: { 
-    ring: 'ring-purple-400/50', 
-    glow: 'shadow-purple-400/30 shadow-lg', 
-    badge: 'bg-purple-500/20 text-purple-400' 
+    ring: 'ring-gold/50', 
+    glow: 'shadow-lg', 
+    badge: 'bg-gold/20 text-gold' 
   },
   legendary: { 
-    ring: 'ring-yellow-400/50', 
-    glow: 'shadow-yellow-400/40 shadow-xl legendary-glow', 
-    badge: 'bg-yellow-500/20 text-yellow-400' 
+    ring: 'ring-gold/50', 
+    glow: 'shadow-xl legendary-glow', 
+    badge: 'bg-gold/20 text-gold' 
   },
 };
 
