@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users, BookOpen, Trophy, LogOut, Settings, BarChart3, User } from 'lucide-react';
+import { Plus, Users, BookOpen, Trophy, LogOut, Settings, BarChart3, User, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Logo } from '@/components/Logo';
@@ -15,6 +15,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -172,6 +176,16 @@ const Dashboard = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
+  };
+
+  const handleDeleteRoom = async (roomId: string) => {
+    const { error } = await supabase.from('rooms').delete().eq('id', roomId);
+    if (error) {
+      toast({ title: 'Failed to delete room', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Room deleted' });
+      fetchRooms();
+    }
   };
 
   const getModeStyles = (mode: string) => {
@@ -377,15 +391,48 @@ const Dashboard = () => {
                   {rooms.map((room) => (
                     <Card 
                       key={room.id} 
-                      className="cursor-pointer card-interactive"
+                      className="cursor-pointer card-interactive relative group"
                       onClick={() => navigate(`/room/${room.id}`)}
                     >
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between gap-2">
                           <CardTitle className="text-base font-medium">{room.name}</CardTitle>
-                          <Badge variant="outline" className={getModeStyles(room.mode)}>
-                            {room.mode}
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="outline" className={getModeStyles(room.mode)}>
+                              {room.mode}
+                            </Badge>
+                            {room.owner_id === user?.id && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete "{room.name}"?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently delete the room, all documents, quizzes, and scores. This cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteRoom(room.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
                         </div>
                         <CardDescription className="font-mono text-xs">
                           {room.code}
