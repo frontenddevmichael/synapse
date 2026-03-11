@@ -739,7 +739,7 @@ const RoomPage = () => {
                   <>
                     {/* Top 3 Podium */}
                     {leaderboard.length >= 1 && (
-                      <motion.div {...itemProps} className="grid grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
+                      <motion.div {...itemProps} className="hidden sm:grid grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
                         {/* 2nd Place */}
                         <div className="flex flex-col items-center justify-end">
                           {leaderboard[1] && (
