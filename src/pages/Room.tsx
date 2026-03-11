@@ -353,70 +353,69 @@ const RoomPage = () => {
       <div className="fixed inset-0 -z-10 mesh-gradient opacity-50" />
 
       {/* Header */}
-      <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border/30 bg-background/60 backdrop-blur-xl sticky top-0 z-40">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-foreground">
+      <header className="flex items-center justify-between px-3 sm:px-8 py-3 sm:py-4 border-b border-border/30 bg-background/60 backdrop-blur-xl sticky top-0 z-40">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px]">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <Logo />
         </div>
-        {/* Persistent mode indicator */}
-        <div className="flex items-center gap-3">
-          <Badge variant="outline" className={`mode-${room.mode} gap-1.5 px-3 py-1.5 font-semibold`}>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Badge variant="outline" className={`mode-${room.mode} gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 font-semibold text-[10px] sm:text-xs`}>
             {getModeIcon(room.mode)}
-            {getModeLabel(room.mode)}
+            <span className="hidden xs:inline">{getModeLabel(room.mode)}</span>
+            <span className="xs:hidden">{room.mode}</span>
           </Badge>
           <ThemeToggle />
         </div>
       </header>
 
-      {/* Room Hero */}
+      {/* Room Hero — two-line on mobile */}
       <motion.div {...containerProps} className="border-b border-border/30 bg-card/30 backdrop-blur-sm">
-        <div className="container max-w-6xl px-4 sm:px-8 py-8">
-          <motion.div {...itemProps} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tighter mb-2">
-                {room.name}
-              </h1>
-              <div className="flex items-center gap-3 flex-wrap">
-                <button
-                  onClick={handleCopyCode}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors font-mono text-sm text-muted-foreground"
-                >
-                  {room.code}
-                  {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
-                </button>
-                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5" />
-                  {members.length} member{members.length !== 1 ? 's' : ''}
-                </span>
-                {quizzes.length > 0 && (
-                  <ActiveUsersIndicator quizId={quizzes[0]?.id || ''} roomId={room.id} />
-                )}
-                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {quizzes.length} quiz{quizzes.length !== 1 ? 'zes' : ''}
-                </span>
-              </div>
+        <div className="container max-w-6xl px-3 sm:px-8 py-5 sm:py-8">
+          <motion.div {...itemProps}>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter mb-2">
+              {room.name}
+            </h1>
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap mb-3 sm:mb-0">
+              <button
+                onClick={handleCopyCode}
+                className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors font-mono text-xs sm:text-sm text-muted-foreground min-h-[36px]"
+              >
+                {room.code}
+                {copied ? <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-success" /> : <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+              </button>
+              <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
+                <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                {members.length}
+              </span>
+              {quizzes.length > 0 && (
+                <ActiveUsersIndicator quizId={quizzes[0]?.id || ''} roomId={room.id} />
+              )}
+              <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
+                <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                {quizzes.length} quiz{quizzes.length !== 1 ? 'zes' : ''}
+              </span>
             </div>
+            {/* Upload button — full width on mobile */}
             <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2 font-semibold">
+                <Button className="gap-2 font-semibold w-full sm:w-auto mt-3 sm:mt-0 sm:absolute sm:right-8 sm:top-8">
                   <Upload className="h-4 w-4" />
                   Upload Document
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg">
+              <DialogContent className="max-w-lg mx-4 sm:mx-auto">
                 <DialogHeader>
-                  <DialogTitle className="text-xl font-bold">Upload Document</DialogTitle>
-                  <DialogDescription>Upload a PDF or paste your study material to generate quizzes</DialogDescription>
+                  <DialogTitle className="text-lg sm:text-xl font-bold">Upload Document</DialogTitle>
+                  <DialogDescription className="text-xs sm:text-sm">Upload a PDF or paste your study material to generate quizzes</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
                   <div className="flex gap-2">
-                    <Button variant={uploadMode === 'paste' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('paste')} className="flex-1">
+                    <Button variant={uploadMode === 'paste' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('paste')} className="flex-1 min-h-[44px]">
                       Paste Text
                     </Button>
-                    <Button variant={uploadMode === 'file' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('file')} className="flex-1">
+                    <Button variant={uploadMode === 'file' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('file')} className="flex-1 min-h-[44px]">
                       Upload File
                     </Button>
                   </div>
@@ -427,36 +426,36 @@ const RoomPage = () => {
                   {uploadMode === 'paste' ? (
                     <div className="space-y-2">
                       <Label>Content</Label>
-                      <Textarea placeholder="Paste your study material here..." value={docContent} onChange={(e) => setDocContent(e.target.value)} rows={10} />
+                      <Textarea placeholder="Paste your study material here..." value={docContent} onChange={(e) => setDocContent(e.target.value)} rows={6} className="sm:rows-10" />
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <Label>File</Label>
                       {!selectedFile ? (
                         <div
-                          className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                          className="border-2 border-dashed border-border rounded-xl p-5 sm:p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
                           onClick={() => fileInputRef.current?.click()}
                         >
-                          <File className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-                          <p className="text-sm font-medium">Click to upload a file</p>
-                          <p className="text-xs text-muted-foreground mt-1">PDF, TXT, or MD files supported</p>
+                          <File className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-2 sm:mb-3 text-muted-foreground" />
+                          <p className="text-xs sm:text-sm font-medium">Click to upload a file</p>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">PDF, TXT, or MD files supported</p>
                         </div>
                       ) : (
-                        <div className="border border-border rounded-xl p-4">
+                        <div className="border border-border rounded-xl p-3 sm:p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <FileText className="h-8 w-8 text-primary" />
+                              <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
                               <div>
-                                <p className="font-medium text-sm">{selectedFile.name}</p>
-                                <p className="text-xs text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
+                                <p className="font-medium text-xs sm:text-sm">{selectedFile.name}</p>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
                               </div>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={clearSelectedFile} disabled={isParsing}>
+                            <Button variant="ghost" size="icon" onClick={clearSelectedFile} disabled={isParsing} className="min-h-[44px] min-w-[44px]">
                               {isParsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
                             </Button>
                           </div>
                           {docContent && (
-                            <p className="text-xs text-muted-foreground mt-2">✓ Extracted {docContent.length.toLocaleString()} characters</p>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">✓ Extracted {docContent.length.toLocaleString()} characters</p>
                           )}
                         </div>
                       )}
@@ -475,33 +474,36 @@ const RoomPage = () => {
       </motion.div>
 
       {/* Main content */}
-      <main className="flex-1 container max-w-6xl py-8 px-4 sm:px-8">
+      <main className="flex-1 container max-w-6xl py-6 sm:py-8 px-3 sm:px-8">
         <motion.div {...containerProps}>
-          <Tabs defaultValue="quizzes" className="space-y-8">
+          <Tabs defaultValue="quizzes" className="space-y-6 sm:space-y-8">
             <motion.div {...itemProps}>
-              <TabsList className="bg-muted/50 backdrop-blur-sm">
-                <TabsTrigger value="quizzes" className="gap-2 font-semibold">
-                  <Sparkles className="h-4 w-4" />
+              {/* Scrollable tabs on mobile */}
+              <TabsList className="bg-muted/50 backdrop-blur-sm overflow-x-auto whitespace-nowrap w-full sm:w-auto flex sm:inline-flex">
+                <TabsTrigger value="quizzes" className="gap-1.5 sm:gap-2 font-semibold min-h-[44px] text-xs sm:text-sm flex-1 sm:flex-none">
+                  <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   Quizzes
                 </TabsTrigger>
-                <TabsTrigger value="documents" className="gap-2 font-semibold">
-                  <FileText className="h-4 w-4" />
-                  Documents
+                <TabsTrigger value="documents" className="gap-1.5 sm:gap-2 font-semibold min-h-[44px] text-xs sm:text-sm flex-1 sm:flex-none">
+                  <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Documents</span>
+                  <span className="xs:hidden">Docs</span>
                 </TabsTrigger>
-                <TabsTrigger value="members" className="gap-2 font-semibold">
-                  <Users className="h-4 w-4" />
-                  Members
+                <TabsTrigger value="members" className="gap-1.5 sm:gap-2 font-semibold min-h-[44px] text-xs sm:text-sm flex-1 sm:flex-none">
+                  <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Members</span>
+                  <span className="xs:hidden">{members.length}</span>
                 </TabsTrigger>
                 {room.leaderboard_enabled && (
-                  <TabsTrigger value="leaderboard" className="gap-2 font-semibold">
-                    <Trophy className="h-4 w-4" />
-                    Leaderboard
+                  <TabsTrigger value="leaderboard" className="gap-1.5 sm:gap-2 font-semibold min-h-[44px] text-xs sm:text-sm flex-1 sm:flex-none">
+                    <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Leaderboard</span>
+                    <span className="sm:hidden">Rank</span>
                   </TabsTrigger>
                 )}
                 {user?.id === room.owner_id && (
-                  <TabsTrigger value="settings" className="gap-2 font-semibold">
-                    <Settings className="h-4 w-4" />
-                    Settings
+                  <TabsTrigger value="settings" className="gap-1.5 sm:gap-2 font-semibold min-h-[44px] text-xs sm:text-sm flex-1 sm:flex-none">
+                    <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </TabsTrigger>
                 )}
               </TabsList>
@@ -532,7 +534,7 @@ const RoomPage = () => {
                       <p className="text-sm text-muted-foreground">Create AI-powered questions from your documents</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
                     <div className="space-y-2">
                       <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Document</Label>
                       <Select value={selectedDoc} onValueChange={setSelectedDoc}>
@@ -581,7 +583,7 @@ const RoomPage = () => {
                   <p className="text-muted-foreground">Upload a document and generate your first quiz</p>
                 </motion.div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {quizzes.map((quiz, index) => (
                     <motion.div key={quiz.id} {...itemProps} transition={{ delay: index * 0.05 }}>
                       <div
@@ -656,7 +658,7 @@ const RoomPage = () => {
                   </Button>
                 </motion.div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {documents.map((doc, index) => (
                     <motion.div key={doc.id} {...itemProps} transition={{ delay: index * 0.05 }}>
                       <div className="bento-card group relative">
@@ -699,7 +701,7 @@ const RoomPage = () => {
 
             {/* Members Tab */}
             <TabsContent value="members" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {members.map((member, index) => (
                   <motion.div key={member.id} {...itemProps} transition={{ delay: index * 0.05 }}>
                     <div className="bento-card">
@@ -737,7 +739,7 @@ const RoomPage = () => {
                   <>
                     {/* Top 3 Podium */}
                     {leaderboard.length >= 1 && (
-                      <motion.div {...itemProps} className="grid grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
+                      <motion.div {...itemProps} className="hidden sm:grid grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
                         {/* 2nd Place */}
                         <div className="flex flex-col items-center justify-end">
                           {leaderboard[1] && (

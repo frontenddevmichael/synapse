@@ -73,37 +73,37 @@ const Preferences = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background noise-bg mesh-gradient">
+    <div className="min-h-screen flex flex-col bg-background noise-bg mesh-gradient pb-14 sm:pb-0">
       <header className="flex items-center justify-between p-4 sm:p-6 border-b border-border/30 bg-background/60 backdrop-blur-xl sticky top-0 z-40">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}><ArrowLeft className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="min-h-[44px] min-w-[44px]"><ArrowLeft className="h-4 w-4" /></Button>
           <Logo />
         </div>
         <ThemeToggle />
       </header>
 
-      <main className="flex-1 container max-w-2xl py-8 px-4 sm:px-8">
+      <main className="flex-1 container max-w-2xl py-6 sm:py-8 px-4 sm:px-8">
         <motion.div variants={stagger} initial="hidden" animate="visible">
-          <motion.div variants={fadeUp} className="mb-8">
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tighter mb-2">Preferences</h1>
-            <p className="text-muted-foreground text-lg">Customize your default quiz settings</p>
+          <motion.div variants={fadeUp} className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter mb-1 sm:mb-2">Preferences</h1>
+            <p className="text-muted-foreground text-sm sm:text-lg">Customize your default quiz settings</p>
           </motion.div>
 
           <motion.div variants={fadeUp}>
             <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-xl font-bold">Quiz Defaults</CardTitle>
-                <CardDescription>These settings apply to new quizzes you take</CardDescription>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl font-bold">Quiz Defaults</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">These settings apply to new quizzes you take</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-8">
-                <div className="p-4 rounded-xl bg-warning/5 border border-warning/20">
-                  <p className="text-sm text-warning font-medium">⚠️ Room rules override these defaults</p>
-                  <p className="text-xs text-muted-foreground mt-1">
+              <CardContent className="space-y-6 sm:space-y-8 p-4 sm:p-6 pt-0 sm:pt-0">
+                <div className="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-warning/5 border border-warning/20">
+                  <p className="text-xs sm:text-sm text-warning font-medium">⚠️ Room rules override these defaults</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                     When a room's mode is set to Challenge or Exam, the room's timer and answer-reveal settings take priority over your preferences.
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-semibold">Default Difficulty</Label>
+                  <Label className="font-semibold text-sm">Default Difficulty</Label>
                   <Select value={preferences.default_difficulty} onValueChange={(value: any) => setPreferences({ ...preferences, default_difficulty: value })}>
                     <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -112,11 +112,11 @@ const Preferences = () => {
                       <SelectItem value="hard">Hard</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-sm text-muted-foreground">Preferred difficulty when generating new quizzes</p>
+                  <p className="text-xs text-muted-foreground">Preferred difficulty when generating new quizzes</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="font-semibold">Default Time Limit</Label>
+                  <Label className="font-semibold text-sm">Default Time Limit</Label>
                   <Select value={preferences.default_time_limit?.toString() || 'none'} onValueChange={(value) => setPreferences({ ...preferences, default_time_limit: value === 'none' ? null : parseInt(value) })}>
                     <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -128,20 +128,23 @@ const Preferences = () => {
                       <SelectItem value="60">60 minutes</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-sm text-muted-foreground">Time limit preference for timed quizzes</p>
+                  <p className="text-xs text-muted-foreground">Time limit preference for timed quizzes</p>
                 </div>
 
-                <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/30">
-                  <div className="space-y-0.5">
-                    <Label className="font-semibold">Show answers after quiz</Label>
-                    <p className="text-sm text-muted-foreground">Display correct answers when you complete a quiz</p>
+                <div className="flex items-center justify-between p-3 sm:p-4 rounded-lg sm:rounded-xl bg-muted/30 border border-border/30 gap-4">
+                  <div className="space-y-0.5 min-w-0">
+                    <Label className="font-semibold text-sm">Show answers after quiz</Label>
+                    <p className="text-xs text-muted-foreground">Display correct answers when you complete a quiz</p>
                   </div>
                   <Switch checked={preferences.show_answers_after_quiz} onCheckedChange={(checked) => setPreferences({ ...preferences, show_answers_after_quiz: checked })} />
                 </div>
 
-                <Button onClick={handleSave} disabled={isSaving} className="w-full h-12 font-bold text-base">
-                  {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save Preferences</>}
-                </Button>
+                {/* Sticky save on mobile */}
+                <div className="sm:relative fixed bottom-14 sm:bottom-auto left-0 right-0 sm:left-auto sm:right-auto p-4 sm:p-0 bg-background/80 sm:bg-transparent backdrop-blur-sm sm:backdrop-blur-none border-t sm:border-0 border-border/30 z-30">
+                  <Button onClick={handleSave} disabled={isSaving} className="w-full h-11 sm:h-12 font-bold text-sm sm:text-base">
+                    {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save Preferences</>}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </motion.div>

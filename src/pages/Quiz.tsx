@@ -284,21 +284,21 @@ const QuizPage = () => {
         {newAchievement && <AchievementToast name={newAchievement.name} description={newAchievement.description} icon={newAchievement.icon} xpReward={newAchievement.xp_reward} onClose={clearNewAchievement} />}
         <header className="flex items-center justify-between p-4 sm:p-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="min-h-[44px] min-w-[44px]"><ArrowLeft className="h-4 w-4" /></Button>
             <Logo />
           </div>
           <ThemeToggle />
         </header>
-        <main className="flex-1 container max-w-3xl py-8 px-4">
+        <main className="flex-1 container max-w-3xl py-6 sm:py-8 px-4">
           <motion.div variants={stagger} initial="hidden" animate="visible">
-            <motion.div variants={fadeUp} className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-8 sm:p-12 mb-8 text-center shadow-xl">
-              <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Quiz Complete</p>
-              <div className="score-reveal text-7xl sm:text-8xl font-black tracking-tighter mb-4">
+            <motion.div variants={fadeUp} className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-6 sm:p-8 lg:p-12 mb-6 sm:mb-8 text-center shadow-xl">
+              <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3 sm:mb-4">Quiz Complete</p>
+              <div className="score-reveal text-6xl sm:text-7xl lg:text-8xl font-black tracking-tighter mb-3 sm:mb-4">
                 {attempt.score}%
               </div>
-              <p className="text-lg text-muted-foreground mb-6">{correctCount} out of {questions.length} correct</p>
+              <p className="text-base sm:text-lg text-muted-foreground mb-4 sm:mb-6">{correctCount} out of {questions.length} correct</p>
               {xpEarned !== null && (
-                <div className="flex items-center justify-center gap-6">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6">
                   <div className="flex items-center gap-2 text-primary font-bold animate-count-up">
                     <Zap className="h-5 w-5" />
                     +{xpEarned} XP
@@ -311,35 +311,35 @@ const QuizPage = () => {
                   )}
                 </div>
               )}
-              <Button onClick={() => navigate(-1)} className="mt-8 h-11 px-8 font-semibold">Back to Room</Button>
+              <Button onClick={() => navigate(-1)} className="mt-6 sm:mt-8 h-11 px-8 font-semibold w-full sm:w-auto">Back to Room</Button>
             </motion.div>
 
             {shouldShowAnswerReview && (
               <motion.div variants={fadeUp} className="space-y-4">
-                <h2 className="text-2xl font-black tracking-tight">Review</h2>
+                <h2 className="text-xl sm:text-2xl font-black tracking-tight">Review</h2>
                 {questions.map((question, index) => {
                   const userAnswer = answers[question.id];
                   const isCorrect = userAnswer === question.correct_answer;
                   return (
-                    <div key={question.id} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm p-6">
-                      <div className="flex items-start gap-4 mb-4">
-                        {isCorrect ? <CheckCircle className="h-6 w-6 text-success flex-shrink-0 mt-0.5" /> : <XCircle className="h-6 w-6 text-destructive flex-shrink-0 mt-0.5" />}
-                        <p className="font-serif text-lg">{index + 1}. {question.question_text}</p>
+                    <div key={question.id} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm p-4 sm:p-6">
+                      <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
+                        {isCorrect ? <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-success flex-shrink-0 mt-0.5" /> : <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-destructive flex-shrink-0 mt-0.5" />}
+                        <p className="font-serif text-base sm:text-lg">{index + 1}. {question.question_text}</p>
                       </div>
-                      <div className="space-y-2 ml-10">
+                      <div className="space-y-2 sm:ml-10">
                         {question.options.map((option) => (
-                          <div key={option} className={cn('p-3 rounded-lg border transition-all',
+                          <div key={option} className={cn('p-2.5 sm:p-3 rounded-lg border transition-all text-sm',
                             option === question.correct_answer && 'bg-success/10 border-success/30',
                             option === userAnswer && option !== question.correct_answer && 'bg-destructive/10 border-destructive/30',
                             option !== userAnswer && option !== question.correct_answer && 'border-border/30'
                           )}>
                             {option}
-                            {option === question.correct_answer && <span className="ml-2 text-success text-sm font-medium">(Correct)</span>}
-                            {option === userAnswer && option !== question.correct_answer && <span className="ml-2 text-destructive text-sm font-medium">(Your answer)</span>}
+                            {option === question.correct_answer && <span className="ml-2 text-success text-xs sm:text-sm font-medium">(Correct)</span>}
+                            {option === userAnswer && option !== question.correct_answer && <span className="ml-2 text-destructive text-xs sm:text-sm font-medium">(Your answer)</span>}
                           </div>
                         ))}
                         {question.explanation && (
-                          <div className="mt-3 p-4 bg-muted/50 rounded-xl text-sm text-muted-foreground">
+                          <div className="mt-2 sm:mt-3 p-3 sm:p-4 bg-muted/50 rounded-lg sm:rounded-xl text-xs sm:text-sm text-muted-foreground">
                             <span className="font-bold text-foreground">Explanation: </span>{question.explanation}
                           </div>
                         )}
@@ -351,10 +351,10 @@ const QuizPage = () => {
             )}
 
             {!shouldShowAnswerReview && (
-              <motion.div variants={fadeUp} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm p-12 text-center">
-                <Lock className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+              <motion.div variants={fadeUp} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm p-8 sm:p-12 text-center">
+                <Lock className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50 mx-auto mb-4" />
                 <h3 className="font-bold text-lg mb-2">Review Hidden</h3>
-                <p className="text-muted-foreground">Exam mode does not allow answer review.</p>
+                <p className="text-muted-foreground text-sm">Exam mode does not allow answer review.</p>
               </motion.div>
             )}
           </motion.div>
@@ -368,29 +368,32 @@ const QuizPage = () => {
     <div className={`min-h-screen flex flex-col bg-background noise-bg ${getModeBackground()}`}>
       {newAchievement && <AchievementToast name={newAchievement.name} description={newAchievement.description} icon={newAchievement.icon} xpReward={newAchievement.xp_reward} onClose={clearNewAchievement} />}
 
-      {/* Minimal header */}
-      <header className="flex items-center justify-between p-4 sm:p-6">
-        <Logo showText={false} />
-        <div className="flex items-center gap-4">
-          {effectiveTimeLimit && attempt.started_at && (
-            <QuizTimer timeLimitMinutes={effectiveTimeLimit} startedAt={attempt.started_at} onTimeUp={handleTimeUp} isActive={!showResults && !isSubmitting} />
-          )}
-          <Badge variant="outline" className={`${roomMode === 'study' ? 'mode-study' : roomMode === 'challenge' ? 'mode-challenge' : 'mode-exam'} font-semibold text-xs`}>
-            {roomMode}
-          </Badge>
-          <span className="text-sm text-muted-foreground font-mono">
-            {currentQuestionIndex + 1}/{questions.length}
-          </span>
+      {/* Minimal header — two rows on mobile */}
+      <header className="p-3 sm:p-4 lg:p-6">
+        <div className="flex items-center justify-between">
+          <Logo showText={false} />
+          <div className="flex items-center gap-2 sm:gap-4">
+            {effectiveTimeLimit && attempt.started_at && (
+              <QuizTimer timeLimitMinutes={effectiveTimeLimit} startedAt={attempt.started_at} onTimeUp={handleTimeUp} isActive={!showResults && !isSubmitting} />
+            )}
+            <Badge variant="outline" className={`${roomMode === 'study' ? 'mode-study' : roomMode === 'challenge' ? 'mode-challenge' : 'mode-exam'} font-semibold text-[10px] sm:text-xs`}>
+              {roomMode}
+            </Badge>
+            {/* Mobile: text counter instead of dots */}
+            <span className="text-xs sm:text-sm text-muted-foreground font-mono">
+              {currentQuestionIndex + 1}/{questions.length}
+            </span>
+          </div>
         </div>
       </header>
 
       {/* Progress bar */}
-      <div className="px-4 sm:px-8">
-        <Progress value={progress} className="h-1.5 rounded-full" />
+      <div className="px-3 sm:px-8">
+        <Progress value={progress} className="h-1 sm:h-1.5 rounded-full" />
       </div>
 
       {/* Question — near fullscreen */}
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-8">
+      <main className="flex-1 flex items-center justify-center p-3 sm:p-8">
         {currentQuestion && (
           <motion.div
             key={currentQuestion.id}
@@ -399,26 +402,27 @@ const QuizPage = () => {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="w-full max-w-2xl"
           >
-            <div className="flex items-start justify-between mb-10">
-              <p className="font-serif text-2xl sm:text-3xl lg:text-4xl leading-relaxed text-center text-balance flex-1">
-                {currentQuestion.question_text}
-              </p>
+            {/* Question text — bookmark below on mobile */}
+            <p className="font-serif text-xl sm:text-2xl lg:text-3xl xl:text-4xl leading-relaxed text-center text-balance mb-2 sm:mb-0">
+              {currentQuestion.question_text}
+            </p>
+            <div className="flex items-center justify-center gap-2 mb-6 sm:mb-10">
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={() => toggleBookmark(currentQuestion.id)}
-                className="shrink-0 ml-4 mt-1"
+                className="text-xs gap-1 min-h-[44px]"
                 title={bookmarkedQuestions.has(currentQuestion.id) ? 'Remove bookmark' : 'Bookmark question'}
               >
                 {bookmarkedQuestions.has(currentQuestion.id) ? (
-                  <BookmarkCheck className="h-5 w-5 text-primary" />
+                  <><BookmarkCheck className="h-4 w-4 text-primary" /> Bookmarked</>
                 ) : (
-                  <Bookmark className="h-5 w-5 text-muted-foreground" />
+                  <><Bookmark className="h-4 w-4 text-muted-foreground" /> Bookmark</>
                 )}
               </Button>
             </div>
 
-            <div className="space-y-3 mb-10">
+            <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-10">
               {currentQuestion.options.map((option, i) => {
                 const showStudyFeedback = roomMode === 'study' && currentQuestionAnswered;
                 const isCorrectOption = option === currentQuestion.correct_answer;
@@ -433,7 +437,7 @@ const QuizPage = () => {
                     onClick={() => selectAnswer(currentQuestion.id, option)}
                     disabled={roomMode === 'study' && currentQuestionAnswered}
                     className={cn(
-                      'w-full p-5 text-left rounded-xl border-2 transition-all duration-200 font-medium text-base',
+                      'w-full p-4 sm:p-5 text-left rounded-xl border-2 transition-all duration-200 font-medium text-sm sm:text-base min-h-[52px]',
                       !showStudyFeedback && isSelected
                         ? 'border-primary bg-primary/10 shadow-md'
                         : !showStudyFeedback && 'border-border/50 hover:border-primary/40 hover:bg-primary/5',
@@ -443,14 +447,14 @@ const QuizPage = () => {
                       roomMode === 'study' && currentQuestionAnswered && 'cursor-not-allowed'
                     )}
                   >
-                    <span className="flex items-center gap-3">
-                      <span className="h-7 w-7 rounded-full border-2 border-current/20 flex items-center justify-center text-xs font-bold">
+                    <span className="flex items-center gap-2.5 sm:gap-3">
+                      <span className="h-6 w-6 sm:h-7 sm:w-7 rounded-full border-2 border-current/20 flex items-center justify-center text-[10px] sm:text-xs font-bold shrink-0">
                         {String.fromCharCode(65 + i)}
                       </span>
-                      {option}
+                      <span className="flex-1">{option}</span>
                     </span>
-                    {showStudyFeedback && isCorrectOption && <span className="ml-10 text-success text-sm font-bold">✓ Correct</span>}
-                    {showStudyFeedback && isWrongAnswer && <span className="ml-10 text-destructive text-sm font-bold">✗ Incorrect</span>}
+                    {showStudyFeedback && isCorrectOption && <span className="ml-8 sm:ml-10 text-success text-xs sm:text-sm font-bold">✓ Correct</span>}
+                    {showStudyFeedback && isWrongAnswer && <span className="ml-8 sm:ml-10 text-destructive text-xs sm:text-sm font-bold">✗ Incorrect</span>}
                   </motion.button>
                 );
               })}
@@ -460,32 +464,31 @@ const QuizPage = () => {
               <StudyModeAnswer options={currentQuestion.options} selectedAnswer={answers[currentQuestion.id]} correctAnswer={currentQuestion.correct_answer} explanation={currentQuestion.explanation} showFeedback={true} />
             )}
 
-            <div className="flex justify-between items-center">
-              <Button variant="ghost" onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))} disabled={currentQuestionIndex === 0} className="font-semibold">
+            {/* Navigation — sticky bottom bar on mobile */}
+            <div className="flex justify-between items-center gap-3">
+              <Button variant="ghost" onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))} disabled={currentQuestionIndex === 0} className="font-semibold min-h-[44px] flex-1 sm:flex-none">
                 Previous
               </Button>
-              <div className="flex items-center gap-2">
-                {currentQuestionIndex === questions.length - 1 ? (
-                  <Button onClick={submitQuiz} disabled={isSubmitting || Object.keys(answers).length < questions.length} className="font-bold h-11 px-8">
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Submit Quiz
-                  </Button>
-                ) : (
-                  <Button onClick={() => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))} className="font-semibold">
-                    Next
-                  </Button>
-                )}
-              </div>
+              {currentQuestionIndex === questions.length - 1 ? (
+                <Button onClick={submitQuiz} disabled={isSubmitting || Object.keys(answers).length < questions.length} className="font-bold h-11 px-6 sm:px-8 flex-1 sm:flex-none">
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Submit
+                </Button>
+              ) : (
+                <Button onClick={() => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))} className="font-semibold min-h-[44px] flex-1 sm:flex-none">
+                  Next
+                </Button>
+              )}
             </div>
           </motion.div>
         )}
       </main>
 
-      {/* Question dots */}
-      <div className="flex justify-center gap-1.5 pb-6 flex-wrap px-4">
+      {/* Question dots — hidden on mobile (use text counter), visible on desktop */}
+      <div className="hidden sm:flex justify-center gap-1.5 pb-6 flex-wrap px-4">
         {questions.map((q, i) => (
           <button key={q.id} onClick={() => setCurrentQuestionIndex(i)}
-            className={cn('w-2.5 h-2.5 rounded-full transition-all duration-200',
+            className={cn('w-3 h-3 rounded-full transition-all duration-200',
               i === currentQuestionIndex ? 'bg-primary scale-125' : answers[q.id] ? 'bg-primary/40' : 'bg-muted-foreground/20'
             )} />
         ))}

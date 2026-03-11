@@ -24,6 +24,7 @@ import { XpProgress } from '@/components/gamification/XpProgress';
 import { StreakBadge } from '@/components/gamification/StreakBadge';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import { AchievementToast } from '@/components/gamification/AchievementToast';
+import { Progress } from '@/components/ui/progress';
 import { fadeUp, staggerFast } from '@/lib/motion';
 
 interface Room {
@@ -119,13 +120,8 @@ const Dashboard = () => {
 
   const handleSignOut = async () => { await signOut(); navigate('/auth'); };
 
-
   const getModeClass = (mode: string) => {
-    const styles: Record<string, string> = {
-      study: 'mode-study',
-      challenge: 'mode-challenge',
-      exam: 'mode-exam',
-    };
+    const styles: Record<string, string> = { study: 'mode-study', challenge: 'mode-challenge', exam: 'mode-exam' };
     return styles[mode] || '';
   };
 
@@ -142,7 +138,7 @@ const Dashboard = () => {
   const itemProps = prefersReducedMotion ? {} : { variants: fadeUp };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background noise-bg">
+    <div className="min-h-screen flex flex-col bg-background noise-bg pb-14 sm:pb-0">
       {/* Ambient background */}
       <div className="fixed inset-0 -z-10 mesh-gradient" />
 
@@ -154,8 +150,8 @@ const Dashboard = () => {
         />
       )}
 
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border/30 bg-background/60 backdrop-blur-xl sticky top-0 z-40">
+      {/* Header — simplified on mobile (nav icons moved to bottom nav) */}
+      <header className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-border/30 bg-background/60 backdrop-blur-xl sticky top-0 z-40">
         <Logo />
         <div className="flex items-center gap-2 sm:gap-3">
           {stats && (
@@ -165,63 +161,85 @@ const Dashboard = () => {
             </div>
           )}
           <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} className="text-muted-foreground hover:text-foreground">
+          {/* Desktop-only nav icons */}
+          <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
             <User className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/bookmarks')} className="text-muted-foreground hover:text-foreground" title="Study Deck">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/bookmarks')} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground" title="Study Deck">
             <Bookmark className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/preferences')} className="text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/preferences')} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
             <Settings className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="icon" onClick={handleSignOut} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>
       </header>
 
+      {/* Mobile XP/Streak strip */}
+      {stats && (
+        <div className="sm:hidden flex items-center gap-3 px-4 py-2.5 border-b border-border/20 bg-background/40 backdrop-blur-sm">
+          <Badge variant="outline" className="text-xs font-bold gap-1 shrink-0">
+            <Zap className="h-3 w-3 text-primary" />
+            Lv {stats.level}
+          </Badge>
+          <div className="flex-1 min-w-0">
+            <Progress value={xpProgress.percentage} className="h-1.5" />
+          </div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+            <Flame className="h-3.5 w-3.5 text-warning" />
+            {stats.streak_days}
+          </div>
+          <Button variant="ghost" size="icon" onClick={handleSignOut} className="h-8 w-8 text-muted-foreground shrink-0">
+            <LogOut className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
+
       {/* Main */}
-      <main className="flex-1 container max-w-6xl py-8 px-4 sm:px-8">
+      <main className="flex-1 container max-w-6xl py-6 sm:py-8 px-4 sm:px-8">
         <motion.div {...containerProps}>
-          <motion.div {...itemProps} className="mb-8">
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tighter mb-2">Your rooms</h1>
-            <p className="text-muted-foreground text-lg">
+          <motion.div {...itemProps} className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter mb-1 sm:mb-2">Your rooms</h1>
+            <p className="text-muted-foreground text-sm sm:text-lg">
               Create or join a room to start studying
             </p>
           </motion.div>
 
-          <Tabs defaultValue="rooms" className="space-y-8">
+          <Tabs defaultValue="rooms" className="space-y-6 sm:space-y-8">
             <motion.div {...itemProps}>
-              <TabsList className="bg-muted/50 backdrop-blur-sm">
-                <TabsTrigger value="rooms" className="gap-2 font-semibold">
+              <TabsList className="bg-muted/50 backdrop-blur-sm w-full sm:w-auto">
+                <TabsTrigger value="rooms" className="gap-2 font-semibold flex-1 sm:flex-none min-h-[44px]">
                   <Users className="h-4 w-4" />
                   Rooms
                 </TabsTrigger>
-                <TabsTrigger value="analytics" className="gap-2 font-semibold">
+                <TabsTrigger value="analytics" className="gap-2 font-semibold flex-1 sm:flex-none min-h-[44px]">
                   <BarChart3 className="h-4 w-4" />
                   Progress
                 </TabsTrigger>
               </TabsList>
             </motion.div>
 
-            <TabsContent value="rooms" className="space-y-8">
-              {/* Action cards */}
-              <motion.div {...itemProps} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <TabsContent value="rooms" className="space-y-6 sm:space-y-8">
+              {/* Action cards — pill buttons on mobile, bento cards on desktop */}
+              <motion.div {...itemProps} className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4">
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                   <DialogTrigger asChild>
-                    <div className="bento-card cursor-pointer group">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
-                          <Plus className="h-6 w-6 text-primary" />
+                    {/* Mobile: compact pill, Desktop: bento card */}
+                    <div className="bento-card cursor-pointer group sm:p-6 p-4">
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                          <Plus className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                         </div>
-                        <div>
-                          <h3 className="font-bold text-lg">Create room</h3>
-                          <p className="text-sm text-muted-foreground">Start a new study group</p>
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-sm sm:text-lg">Create room</h3>
+                          <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Start a new study group</p>
                         </div>
                       </div>
                     </div>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
+                  <DialogContent className="sm:max-w-md mx-4 sm:mx-auto">
                     <DialogHeader>
                       <DialogTitle className="text-xl font-bold">Create room</DialogTitle>
                       <DialogDescription>Set up a space for your study group</DialogDescription>
@@ -234,9 +252,7 @@ const Dashboard = () => {
                       <div className="space-y-2">
                         <Label htmlFor="roomMode">Mode</Label>
                         <Select value={newRoomMode} onValueChange={(v) => setNewRoomMode(v as any)}>
-                          <SelectTrigger className="h-11">
-                            <SelectValue />
-                          </SelectTrigger>
+                          <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="study">
                               <div className="flex items-center gap-2">
@@ -268,19 +284,19 @@ const Dashboard = () => {
 
                 <Dialog open={isJoinOpen} onOpenChange={setIsJoinOpen}>
                   <DialogTrigger asChild>
-                    <div className="bento-card cursor-pointer group">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-xl bg-muted group-hover:bg-muted/80 transition-colors">
-                          <Users className="h-6 w-6 text-foreground" />
+                    <div className="bento-card cursor-pointer group sm:p-6 p-4">
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-muted group-hover:bg-muted/80 transition-colors">
+                          <Users className="h-5 w-5 sm:h-6 sm:w-6 text-foreground" />
                         </div>
-                        <div>
-                          <h3 className="font-bold text-lg">Join room</h3>
-                          <p className="text-sm text-muted-foreground">Enter a 6-letter code</p>
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-sm sm:text-lg">Join room</h3>
+                          <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Enter a 6-letter code</p>
                         </div>
                       </div>
                     </div>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
+                  <DialogContent className="sm:max-w-md mx-4 sm:mx-auto">
                     <DialogHeader>
                       <DialogTitle className="text-xl font-bold">Join room</DialogTitle>
                       <DialogDescription>Enter the room code from your group</DialogDescription>
@@ -300,51 +316,55 @@ const Dashboard = () => {
                 </Dialog>
               </motion.div>
 
-              {/* Room grid — Bento style */}
+              {/* Room list — list on mobile, grid on desktop */}
               <div>
                 {isLoading ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-3 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4 sm:space-y-0">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="bento-card animate-pulse h-36" />
+                      <div key={i} className="bento-card animate-pulse h-20 sm:h-36" />
                     ))}
                   </div>
                 ) : rooms.length === 0 ? (
-                  <motion.div {...itemProps} className="bento-card py-16 flex flex-col items-center text-center">
-                    <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <h3 className="font-bold text-lg mb-1">No rooms yet</h3>
-                    <p className="text-muted-foreground">
+                  <motion.div {...itemProps} className="bento-card py-12 sm:py-16 flex flex-col items-center text-center">
+                    <Users className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50 mb-3 sm:mb-4" />
+                    <h3 className="font-bold text-base sm:text-lg mb-1">No rooms yet</h3>
+                    <p className="text-sm text-muted-foreground">
                       Create a room or join one with a code
                     </p>
                   </motion.div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
                     {rooms.map((room, index) => (
                       <motion.div
                         key={room.id}
                         {...itemProps}
                         transition={{ delay: index * 0.05 }}
                       >
+                        {/* Mobile: list row, Desktop: bento card */}
                         <div
-                          className="bento-card cursor-pointer group hover:shadow-lg relative"
+                          className="bento-card cursor-pointer group hover:shadow-lg relative p-3 sm:p-6"
                           onClick={() => navigate(`/room/${room.id}`)}
                         >
                           {/* Mode tint strip */}
-                          <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-xl ${
+                          <div className={`absolute top-0 left-0 sm:right-0 ${
+                            /* Mobile: left edge strip, Desktop: top strip */
+                            'sm:h-1 sm:rounded-t-xl h-full w-1 rounded-l-xl sm:w-auto'
+                          } ${
                             room.mode === 'study' ? 'bg-mode-study' :
                             room.mode === 'challenge' ? 'bg-mode-challenge' :
                             'bg-mode-exam'
                           }`} />
 
-                          <div className="flex items-start justify-between gap-3 mt-2">
-                            <div className="min-w-0 flex-1">
-                              <h3 className="font-bold text-lg truncate group-hover:text-primary transition-colors">
+                          <div className="flex items-center justify-between gap-3 sm:items-start sm:flex-col sm:gap-0 pl-2 sm:pl-0 sm:mt-2">
+                            <div className="min-w-0 flex-1 sm:w-full">
+                              <h3 className="font-bold text-sm sm:text-lg truncate group-hover:text-primary transition-colors">
                                 {room.name}
                               </h3>
-                              <p className="font-mono text-xs text-muted-foreground mt-1">{room.code}</p>
+                              <p className="font-mono text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">{room.code}</p>
                             </div>
-                            <Badge variant="outline" className={`${getModeClass(room.mode)} text-xs font-semibold gap-1`}>
+                            <Badge variant="outline" className={`${getModeClass(room.mode)} text-[10px] sm:text-xs font-semibold gap-1 shrink-0 sm:mt-2`}>
                               {getModeIcon(room.mode)}
-                              {room.mode}
+                              <span className="hidden sm:inline">{room.mode}</span>
                             </Badge>
                           </div>
                         </div>

@@ -62,7 +62,6 @@ const Auth = () => {
 
   const handleSignUp = async (data: SignUpFormData) => {
     setIsLoading(true);
-    // Check username uniqueness first
     const { data: existing } = await supabase
       .from('profiles')
       .select('id')
@@ -109,50 +108,50 @@ const Auth = () => {
       </div>
 
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-5">
+      <header className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5">
         <Logo size="lg" />
         <ThemeToggle />
       </header>
 
       {/* Main */}
-      <main className="flex-1 flex items-center justify-center p-6">
+      <main className="flex-1 flex flex-col sm:items-center sm:justify-center px-4 sm:p-6">
         <motion.div
           variants={stagger}
           initial="hidden"
           animate="visible"
-          className="w-full max-w-md"
+          className="w-full max-w-md mx-auto"
         >
-          {/* Statement heading */}
-          <motion.div variants={fadeUp} className="text-center mb-10">
-            <h1 className="text-display-md font-black tracking-tighter mb-3">
+          {/* Statement heading — above card on mobile */}
+          <motion.div variants={fadeUp} className="text-center mb-6 sm:mb-10">
+            <h1 className="text-display-md font-black tracking-tighter mb-2 sm:mb-3">
               {isSignUp ? 'Join the network' : 'Welcome back'}
             </h1>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground text-base sm:text-lg">
               {isSignUp
                 ? 'Create your account to start studying smarter'
                 : 'Sign in to continue your journey'}
             </p>
           </motion.div>
 
-          {/* Form card */}
+          {/* Form card — edge-to-edge on mobile */}
           <motion.div
             variants={fadeUp}
-            className="relative rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-8 shadow-xl"
+            className="relative rounded-t-2xl sm:rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-5 sm:p-8 shadow-xl -mx-4 sm:mx-0"
           >
-            {/* Diagonal accent */}
-            <div className="absolute -right-px -top-px h-20 w-20 overflow-hidden rounded-tr-2xl">
+            {/* Diagonal accent — hidden on mobile */}
+            <div className="hidden sm:block absolute -right-px -top-px h-20 w-20 overflow-hidden rounded-tr-2xl">
               <div className="absolute -right-10 -top-10 h-20 w-20 rotate-45 bg-primary/10" />
             </div>
 
             {isSignUp ? (
-              <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-5">
+              <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4 sm:space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="username" className="text-sm font-medium">Username</Label>
                   <Input
                     id="username"
                     placeholder="your_username"
                     autoComplete="username"
-                    className="h-12 bg-background/50 border-border/50 text-base"
+                    className="h-11 sm:h-12 bg-background/50 border-border/50 text-base"
                     {...signUpForm.register('username')}
                   />
                   {signUpForm.formState.errors.username && (
@@ -167,7 +166,7 @@ const Auth = () => {
                     type="email"
                     placeholder="you@example.com"
                     autoComplete="email"
-                    className="h-12 bg-background/50 border-border/50 text-base"
+                    className="h-11 sm:h-12 bg-background/50 border-border/50 text-base"
                     {...signUpForm.register('email')}
                   />
                   {signUpForm.formState.errors.email && (
@@ -183,14 +182,14 @@ const Auth = () => {
                       type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••"
                       autoComplete="new-password"
-                      className="h-12 bg-background/50 border-border/50 text-base pr-12"
+                      className="h-11 sm:h-12 bg-background/50 border-border/50 text-base pr-12"
                       {...signUpForm.register('password')}
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-1 top-1 h-10 w-10 text-muted-foreground hover:text-foreground"
+                      className="absolute right-1 top-1 h-9 w-9 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px]"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -201,13 +200,13 @@ const Auth = () => {
                   )}
                 </div>
 
-                <Button type="submit" className="w-full h-12 text-base font-semibold gap-2" disabled={isLoading}>
+                <Button type="submit" className="w-full h-11 sm:h-12 text-base font-semibold gap-2" disabled={isLoading}>
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
                   Create account
                 </Button>
               </form>
             ) : (
-              <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-5">
+              <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-4 sm:space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium">Email</Label>
                   <Input
@@ -215,7 +214,7 @@ const Auth = () => {
                     type="email"
                     placeholder="you@example.com"
                     autoComplete="email"
-                    className="h-12 bg-background/50 border-border/50 text-base"
+                    className="h-11 sm:h-12 bg-background/50 border-border/50 text-base"
                     {...signInForm.register('email')}
                   />
                   {signInForm.formState.errors.email && (
@@ -231,14 +230,14 @@ const Auth = () => {
                       type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••"
                       autoComplete="current-password"
-                      className="h-12 bg-background/50 border-border/50 text-base pr-12"
+                      className="h-11 sm:h-12 bg-background/50 border-border/50 text-base pr-12"
                       {...signInForm.register('password')}
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-1 top-1 h-10 w-10 text-muted-foreground hover:text-foreground"
+                      className="absolute right-1 top-1 h-9 w-9 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px]"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -249,21 +248,21 @@ const Auth = () => {
                   )}
                 </div>
 
-                <Button type="submit" className="w-full h-12 text-base font-semibold gap-2" disabled={isLoading}>
+                <Button type="submit" className="w-full h-11 sm:h-12 text-base font-semibold gap-2" disabled={isLoading}>
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
                   Sign in
                 </Button>
               </form>
             )}
 
-            <div className="mt-8 text-center text-sm">
+            <div className="mt-6 sm:mt-8 text-center text-sm pb-safe">
               {isSignUp ? (
                 <p className="text-muted-foreground">
                   Already have an account?{' '}
                   <button
                     type="button"
                     onClick={() => setIsSignUp(false)}
-                    className="text-primary font-semibold hover:underline underline-offset-4 transition-colors"
+                    className="text-primary font-semibold hover:underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center"
                   >
                     Sign in
                   </button>
@@ -274,7 +273,7 @@ const Auth = () => {
                   <button
                     type="button"
                     onClick={() => setIsSignUp(true)}
-                    className="text-primary font-semibold hover:underline underline-offset-4 transition-colors"
+                    className="text-primary font-semibold hover:underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center"
                   >
                     Create account
                   </button>
