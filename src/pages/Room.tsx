@@ -583,7 +583,7 @@ const RoomPage = () => {
                   <p className="text-muted-foreground">Upload a document and generate your first quiz</p>
                 </motion.div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {quizzes.map((quiz, index) => (
                     <motion.div key={quiz.id} {...itemProps} transition={{ delay: index * 0.05 }}>
                       <div
