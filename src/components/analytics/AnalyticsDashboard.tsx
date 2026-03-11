@@ -230,8 +230,8 @@ export function AnalyticsDashboard() {
         <ProgressChart data={chartData} />
       </motion.div>
 
-      {/* Detailed Streaks Section */}
-      <motion.div {...itemProps}>
+      {/* Detailed Streaks Section — hidden on mobile (already shown in XP row) */}
+      <motion.div {...itemProps} className="hidden sm:block">
         <Card>
           <CardHeader>
             <CardTitle className="text-base sm:text-lg">Streak Details</CardTitle>
