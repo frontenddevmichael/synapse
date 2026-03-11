@@ -534,7 +534,7 @@ const RoomPage = () => {
                       <p className="text-sm text-muted-foreground">Create AI-powered questions from your documents</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
                     <div className="space-y-2">
                       <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Document</Label>
                       <Select value={selectedDoc} onValueChange={setSelectedDoc}>
