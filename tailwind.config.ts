@@ -85,11 +85,14 @@ export default {
   			display: ['Outfit', 'system-ui', 'sans-serif']
   		},
   		fontSize: {
-  			'2xs': ['0.6875rem', { lineHeight: '1rem' }],
-  			'display-xl': ['4.5rem', { lineHeight: '1', letterSpacing: '-0.04em' }],
-  			'display-lg': ['3.5rem', { lineHeight: '1.05', letterSpacing: '-0.03em' }],
-  			'display-md': ['2.5rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
-  		},
+			'2xs': ['0.6875rem', { lineHeight: '1rem' }],
+			'display-xl': ['2.5rem', { lineHeight: '1.05', letterSpacing: '-0.03em' }],
+			'display-lg': ['2rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
+			'display-md': ['1.75rem', { lineHeight: '1.15', letterSpacing: '-0.02em' }],
+		},
+		screens: {
+			'xs': '475px',
+		},
   		letterSpacing: {
   			tighter: '-0.04em',
   			tight: '-0.02em'
