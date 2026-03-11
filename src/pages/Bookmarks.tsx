@@ -44,7 +44,7 @@ const Bookmarks = () => {
 
   const fetchBookmarks = async () => {
     if (!user) return;
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('bookmarked_questions')
       .select(`
         id, notes, created_at,
@@ -88,37 +88,37 @@ const Bookmarks = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background noise-bg mesh-gradient">
-      <header className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-border/30 bg-background/60 backdrop-blur-xl sticky top-0 z-40">
+    <div className="min-h-screen flex flex-col bg-background noise-bg mesh-gradient pb-14 sm:pb-0">
+      <header className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-border/30 bg-background/60 backdrop-blur-xl sticky top-0 z-40">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}><ArrowLeft className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="min-h-[44px] min-w-[44px]"><ArrowLeft className="h-4 w-4" /></Button>
           <Logo />
         </div>
         <ThemeToggle />
       </header>
 
-      <main className="flex-1 container max-w-3xl py-8 px-4 sm:px-8">
+      <main className="flex-1 container max-w-3xl py-6 sm:py-8 px-4 sm:px-8">
         <motion.div variants={staggerFast} initial="hidden" animate="visible">
-          <motion.div variants={fadeUp} className="mb-8">
+          <motion.div variants={fadeUp} className="mb-6 sm:mb-8">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 rounded-xl bg-primary/10">
-                <Bookmark className="h-5 w-5 text-primary" />
+              <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-primary/10">
+                <Bookmark className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tighter">Study Deck</h1>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter">Study Deck</h1>
             </div>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground text-sm sm:text-lg">
               {bookmarks.length} bookmarked question{bookmarks.length !== 1 ? 's' : ''} for review
             </p>
           </motion.div>
 
           {bookmarks.length === 0 ? (
-            <motion.div variants={fadeUp} className="bento-card py-16 flex flex-col items-center text-center">
-              <BookOpen className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="font-bold text-lg mb-1">No bookmarks yet</h3>
-              <p className="text-muted-foreground">Bookmark questions during quizzes to review them here</p>
+            <motion.div variants={fadeUp} className="bento-card py-12 sm:py-16 flex flex-col items-center text-center">
+              <BookOpen className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50 mb-3 sm:mb-4" />
+              <h3 className="font-bold text-base sm:text-lg mb-1">No bookmarks yet</h3>
+              <p className="text-sm text-muted-foreground">Bookmark questions during quizzes to review them here</p>
             </motion.div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {bookmarks.map((bookmark, index) => {
                 const revealed = revealedAnswers.has(bookmark.id);
                 return (
@@ -126,34 +126,34 @@ const Bookmarks = () => {
                     key={bookmark.id}
                     variants={fadeUp}
                     transition={{ delay: index * 0.05 }}
-                    className="bento-card"
+                    className="bento-card p-4 sm:p-6"
                   >
-                    <div className="flex items-start justify-between gap-3 mb-4">
-                      <p className="font-serif text-lg leading-relaxed flex-1">{bookmark.question.question_text}</p>
+                    <div className="flex items-start justify-between gap-3 mb-3 sm:mb-4">
+                      <p className="font-serif text-base sm:text-lg leading-relaxed flex-1">{bookmark.question.question_text}</p>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive">
+                          <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-8 sm:w-8 shrink-0 text-muted-foreground hover:text-destructive min-h-[44px] min-w-[44px]">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="mx-4 sm:mx-auto">
                           <AlertDialogHeader>
                             <AlertDialogTitle>Remove bookmark?</AlertDialogTitle>
                             <AlertDialogDescription>This question will be removed from your study deck.</AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleRemoveBookmark(bookmark.id)}>Remove</AlertDialogAction>
+                            <AlertDialogCancel className="min-h-[44px]">Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleRemoveBookmark(bookmark.id)} className="min-h-[44px]">Remove</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
                     </div>
 
-                    <div className="space-y-2 mb-4">
+                    <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
                       {bookmark.question.options.map((option: string) => (
                         <div
                           key={option}
-                          className={`p-3 rounded-lg border transition-all text-sm ${
+                          className={`p-2.5 sm:p-3 rounded-lg border transition-all text-xs sm:text-sm ${
                             revealed && option === bookmark.question.correct_answer
                               ? 'bg-success/10 border-success/30 font-medium'
                               : 'border-border/30'
@@ -168,16 +168,16 @@ const Bookmarks = () => {
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <Button variant="outline" size="sm" onClick={() => toggleReveal(bookmark.id)} className="font-semibold">
+                      <Button variant="outline" size="sm" onClick={() => toggleReveal(bookmark.id)} className="font-semibold min-h-[44px]">
                         {revealed ? 'Hide Answer' : 'Reveal Answer'}
                       </Button>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-[10px] sm:text-xs">
                         {bookmark.question.question_type === 'true_false' ? 'True/False' : 'MCQ'}
                       </Badge>
                     </div>
 
                     {revealed && bookmark.question.explanation && (
-                      <div className="mt-4 p-4 bg-muted/50 rounded-xl text-sm text-muted-foreground">
+                      <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-muted/50 rounded-lg sm:rounded-xl text-xs sm:text-sm text-muted-foreground">
                         <span className="font-bold text-foreground">Explanation: </span>
                         {bookmark.question.explanation}
                       </div>

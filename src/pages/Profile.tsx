@@ -59,43 +59,43 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background noise-bg mesh-gradient">
+    <div className="min-h-screen flex flex-col bg-background noise-bg mesh-gradient pb-14 sm:pb-0">
       <header className="flex items-center justify-between p-4 sm:p-6 border-b border-border/30 bg-background/60 backdrop-blur-xl sticky top-0 z-40">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}><ArrowLeft className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="min-h-[44px] min-w-[44px]"><ArrowLeft className="h-4 w-4" /></Button>
           <Logo />
         </div>
         <ThemeToggle />
       </header>
 
-      <main className="flex-1 container max-w-4xl py-8 px-4 sm:px-8 space-y-8">
+      <main className="flex-1 container max-w-4xl py-6 sm:py-8 px-4 sm:px-8 space-y-6 sm:space-y-8">
         <motion.div variants={staggerFast} initial="hidden" animate="visible">
-          <motion.h1 variants={fadeUp} className="text-3xl sm:text-4xl font-black tracking-tighter mb-8">Profile</motion.h1>
+          <motion.h1 variants={fadeUp} className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter mb-6 sm:mb-8">Profile</motion.h1>
 
           {/* Hero stats row */}
           {stats && (
-            <motion.div variants={fadeUp} className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bento-card text-center">
-                <p className="text-4xl font-black">{stats.total_quizzes_completed}</p>
-                <p className="text-sm text-muted-foreground font-medium">Quizzes</p>
+            <motion.div variants={fadeUp} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+              <div className="bento-card text-center p-4 sm:p-6">
+                <p className="text-2xl sm:text-4xl font-black">{stats.total_quizzes_completed}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium">Quizzes</p>
               </div>
-              <div className="bento-card text-center">
-                <p className="text-4xl font-black text-primary">{stats.xp}</p>
-                <p className="text-sm text-muted-foreground font-medium">Total XP</p>
+              <div className="bento-card text-center p-4 sm:p-6">
+                <p className="text-2xl sm:text-4xl font-black text-primary">{stats.xp}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium">Total XP</p>
               </div>
-              <div className="bento-card text-center">
-                <p className="text-4xl font-black text-success">{stats.total_correct_answers}</p>
-                <p className="text-sm text-muted-foreground font-medium">Correct</p>
+              <div className="bento-card text-center p-4 sm:p-6">
+                <p className="text-2xl sm:text-4xl font-black text-success">{stats.total_correct_answers}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium">Correct</p>
               </div>
-              <div className="bento-card flex flex-col items-center justify-center">
+              <div className="bento-card flex flex-col items-center justify-center p-4 sm:p-6">
                 <StreakBadge days={stats.streak_days} />
               </div>
             </motion.div>
           )}
 
-          {/* XP Progress - hero element */}
+          {/* XP Progress */}
           {stats && (
-            <motion.div variants={fadeUp} className="bento-card mb-8">
+            <motion.div variants={fadeUp} className="bento-card mb-6 sm:mb-8">
               <XpProgress level={stats.level} currentXp={xpProgress.current} maxXp={xpProgress.max} percentage={xpProgress.percentage} />
             </motion.div>
           )}
@@ -103,11 +103,11 @@ const Profile = () => {
           {/* Edit profile */}
           <motion.div variants={fadeUp}>
             <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-xl font-bold">Account</CardTitle>
-                <CardDescription>Update your display name and username</CardDescription>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl font-bold">Account</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Update your display name and username</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 p-4 sm:p-6 pt-0 sm:pt-0">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Username</Label>
@@ -118,7 +118,7 @@ const Profile = () => {
                     <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Optional" className="h-11" />
                   </div>
                 </div>
-                <Button onClick={handleSave} disabled={isSaving || !username.trim()} className="gap-2 font-semibold">
+                <Button onClick={handleSave} disabled={isSaving || !username.trim()} className="gap-2 font-semibold w-full sm:w-auto">
                   {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   Save
                 </Button>
@@ -129,18 +129,18 @@ const Profile = () => {
           {/* Trophy Cabinet */}
           <motion.div variants={fadeUp}>
             <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-              <CardHeader>
+              <CardHeader className="p-4 sm:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-gold/10 flex items-center justify-center">
-                    <Trophy className="h-5 w-5 text-gold" />
+                  <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-gold/10 flex items-center justify-center">
+                    <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-gold" />
                   </div>
                   <div>
-                    <CardTitle className="text-xl font-bold">Trophy Cabinet</CardTitle>
-                    <CardDescription>{earnedAchievements.size} of {achievements.length} unlocked</CardDescription>
+                    <CardTitle className="text-lg sm:text-xl font-bold">Trophy Cabinet</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">{earnedAchievements.size} of {achievements.length} unlocked</CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
                 <TrophyCase achievements={achievements} userAchievements={Array.from(earnedAchievements)} />
               </CardContent>
             </Card>
