@@ -658,7 +658,7 @@ const RoomPage = () => {
                   </Button>
                 </motion.div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {documents.map((doc, index) => (
                     <motion.div key={doc.id} {...itemProps} transition={{ delay: index * 0.05 }}>
                       <div className="bento-card group relative">
