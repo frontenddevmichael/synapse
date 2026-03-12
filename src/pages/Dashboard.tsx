@@ -326,10 +326,10 @@ const Dashboard = () => {
                   </div>
                 ) : rooms.length === 0 ? (
                   <motion.div {...itemProps} className="bento-card py-12 sm:py-16 flex flex-col items-center text-center">
-                    <Users className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50 mb-3 sm:mb-4" />
-                    <h3 className="font-bold text-base sm:text-lg mb-1">No rooms yet</h3>
+                    <EmptyDeskIllustration className="w-48 h-36 mb-3 sm:mb-4" />
+                    <h3 className="font-bold text-base sm:text-lg mb-1">Nothing here yet</h3>
                     <p className="text-sm text-muted-foreground">
-                      Create a room or join one with a code
+                      Create a room or paste a code to join one
                     </p>
                   </motion.div>
                 ) : (
