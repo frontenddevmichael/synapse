@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bookmark, Trash2, Loader2, BookOpen } from 'lucide-react';
+import { ArrowLeft, Bookmark, Trash2, Loader2 } from 'lucide-react';
+import { EmptyDeckIllustration } from '@/components/illustrations/EmptyDeckIllustration';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
