@@ -114,9 +114,9 @@ const Bookmarks = () => {
 
           {bookmarks.length === 0 ? (
             <motion.div variants={fadeUp} className="bento-card py-12 sm:py-16 flex flex-col items-center text-center">
-              <BookOpen className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50 mb-3 sm:mb-4" />
-              <h3 className="font-bold text-base sm:text-lg mb-1">No bookmarks yet</h3>
-              <p className="text-sm text-muted-foreground">Bookmark questions during quizzes to review them here</p>
+              <EmptyDeckIllustration className="w-40 h-32 mb-3 sm:mb-4" />
+              <h3 className="font-bold text-base sm:text-lg mb-1">Your deck is empty</h3>
+              <p className="text-sm text-muted-foreground">Bookmark questions during quizzes to build your personal review deck</p>
             </motion.div>
           ) : (
             <div className="space-y-3 sm:space-y-4">
