@@ -121,19 +121,19 @@ const Auth = () => {
           animate="visible"
           className="w-full max-w-md mx-auto"
         >
-          {/* Statement heading — above card on mobile */}
+          {/* Statement heading */}
           <motion.div variants={fadeUp} className="text-center mb-6 sm:mb-10">
             <h1 className="text-display-md font-black tracking-tighter mb-2 sm:mb-3">
-              {isSignUp ? 'Join the network' : 'Welcome back'}
+              {isSignUp ? "Let's get you in" : 'Back already?'}
             </h1>
             <p className="text-muted-foreground text-base sm:text-lg">
               {isSignUp
-                ? 'Create your account to start studying smarter'
-                : 'Sign in to continue your journey'}
+                ? 'Takes 30 seconds. No spam, no nonsense.'
+                : 'Good. Your streak was getting worried.'}
             </p>
           </motion.div>
 
-          {/* Form card — edge-to-edge on mobile */}
+          {/* Form card */}
           <motion.div
             variants={fadeUp}
             className="relative rounded-t-2xl sm:rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-5 sm:p-8 shadow-xl -mx-4 sm:mx-0"
@@ -258,7 +258,7 @@ const Auth = () => {
             <div className="mt-6 sm:mt-8 text-center text-sm pb-safe">
               {isSignUp ? (
                 <p className="text-muted-foreground">
-                  Already have an account?{' '}
+                  Already in?{' '}
                   <button
                     type="button"
                     onClick={() => setIsSignUp(false)}
@@ -269,7 +269,7 @@ const Auth = () => {
                 </p>
               ) : (
                 <p className="text-muted-foreground">
-                  New to Synapse?{' '}
+                  First time?{' '}
                   <button
                     type="button"
                     onClick={() => setIsSignUp(true)}
