@@ -2,8 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Upload, FileText, Sparkles, Trophy, Users, Settings, Copy, Check,
-  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award
+  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye
 } from 'lucide-react';
+import { CardCascadeIllustration } from '@/components/illustrations/CardCascadeIllustration';
+import { DocumentFunnelIllustration } from '@/components/illustrations/DocumentFunnelIllustration';
+import { ActivityFeed } from '@/components/room/ActivityFeed';
+import { DocumentPreview } from '@/components/room/DocumentPreview';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -167,15 +171,17 @@ const RoomPage = () => {
     if (roomData.leaderboard_enabled) {
       const { data: attemptsData } = await supabase
         .from('quiz_attempts')
-        .select(`user_id, score, quiz:quizzes!inner(room_id)`)
+        .select(`user_id, score, quiz:quizzes!inner(room_id, difficulty)`)
         .eq('quiz.room_id', roomId)
         .eq('status', 'completed');
 
       if (attemptsData) {
-        const scoreMap: Record<string, { total: number; count: number }> = {};
+        const scoreMap: Record<string, { weighted: number; count: number }> = {};
         attemptsData.forEach((attempt: any) => {
-          if (!scoreMap[attempt.user_id]) scoreMap[attempt.user_id] = { total: 0, count: 0 };
-          scoreMap[attempt.user_id].total += attempt.score || 0;
+          if (!scoreMap[attempt.user_id]) scoreMap[attempt.user_id] = { weighted: 0, count: 0 };
+          // Weight by difficulty: easy=1, medium=1.5, hard=2
+          const diffWeight = attempt.quiz?.difficulty === 'hard' ? 2 : attempt.quiz?.difficulty === 'medium' ? 1.5 : 1;
+          scoreMap[attempt.user_id].weighted += (attempt.score || 0) * diffWeight;
           scoreMap[attempt.user_id].count += 1;
         });
 
@@ -186,7 +192,7 @@ const RoomPage = () => {
             const profile = profiles?.find((p: any) => p.id === userId);
             return {
               user_id: userId, username: profile?.username || 'Unknown',
-              total_score: scoreMap[userId].total, quizzes_taken: scoreMap[userId].count,
+              total_score: Math.round(scoreMap[userId].weighted), quizzes_taken: scoreMap[userId].count,
             };
           }).sort((a, b) => b.total_score - a.total_score);
           setLeaderboard(leaderboardData);
