@@ -335,13 +335,19 @@ const Dashboard = () => {
                     ))}
                   </div>
                 ) : rooms.length === 0 ? (
-                  <motion.div {...itemProps} className="bento-card py-12 sm:py-16 flex flex-col items-center text-center">
-                    <EmptyDeskIllustration className="w-48 h-36 mb-3 sm:mb-4" />
-                    <h3 className="font-bold text-base sm:text-lg mb-1">Nothing here yet</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Create a room or paste a code to join one
-                    </p>
-                  </motion.div>
+                  <div className="space-y-4">
+                    {/* Show onboarding for brand new users */}
+                    {stats && stats.total_quizzes_completed === 0 && (
+                      <OnboardingCard onCreateRoom={() => setIsCreateOpen(true)} />
+                    )}
+                    <motion.div {...itemProps} className="bento-card py-12 sm:py-16 flex flex-col items-center text-center">
+                      <EmptyDeskIllustration className="w-48 h-36 mb-3 sm:mb-4" />
+                      <h3 className="font-bold text-base sm:text-lg mb-1">Nothing here yet</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Create a room or paste a code to join one
+                      </p>
+                    </motion.div>
+                  </div>
                 ) : (
                   <div className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
                     {rooms.map((room, index) => (
