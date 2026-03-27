@@ -848,7 +848,7 @@ const RoomPage = () => {
                             </div>
                             <div className="text-right">
                               <p className="font-black text-xl">{entry.total_score}</p>
-                              <p className="text-2xs text-muted-foreground uppercase tracking-wider">points</p>
+                              <p className="text-2xs text-muted-foreground uppercase tracking-wider">weighted pts</p>
                             </div>
                           </motion.div>
                         ))}
