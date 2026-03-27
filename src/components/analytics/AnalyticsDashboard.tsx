@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, CheckCircle, Clock, TrendingUp, Flame, Calendar as CalendarIcon } from 'lucide-react';
+import { Target, CheckCircle, Zap, TrendingUp, Flame, Calendar as CalendarIcon } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -181,7 +181,7 @@ export function AnalyticsDashboard() {
         <StatsCard
           title="Total XP"
           value={stats?.xp || 0}
-          icon={<Clock className="h-5 w-5 sm:h-6 sm:w-6" />}
+          icon={<Zap className="h-5 w-5 sm:h-6 sm:w-6" />}
         />
       </motion.div>
 
@@ -230,25 +230,7 @@ export function AnalyticsDashboard() {
         <ProgressChart data={chartData} />
       </motion.div>
 
-      {/* Detailed Streaks Section — hidden on mobile (already shown in XP row) */}
-      <motion.div {...itemProps} className="hidden sm:block">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base sm:text-lg">Streak Details</CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              Track your consistency and momentum
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-        <StreakBadgeEnhanced
-              offensiveStreak={stats?.hot_streak || 0}
-              defensiveStreak={stats?.best_hot_streak || 0}
-              dailyStreak={stats?.streak_days || 0}
-              hasStreakFreeze={stats?.streak_freeze_available || false}
-            />
-          </CardContent>
-        </Card>
-      </motion.div>
+      {/* Duplicate streak section removed — already shown in XP row above */}
     </motion.div>
   );
 }
