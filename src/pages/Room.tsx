@@ -476,6 +476,10 @@ const RoomPage = () => {
               </DialogContent>
             </Dialog>
           </motion.div>
+          {/* Activity Feed */}
+          <div className="container max-w-6xl px-3 sm:px-8 pb-4">
+            <ActivityFeed roomId={room.id} />
+          </div>
         </div>
       </motion.div>
 
@@ -584,7 +588,7 @@ const RoomPage = () => {
               {/* Quiz Grid */}
               {quizzes.length === 0 ? (
                 <motion.div {...itemProps} className="bento-card py-16 flex flex-col items-center text-center">
-                  <Sparkles className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <CardCascadeIllustration className="w-40 h-32 mb-4" />
                   <h3 className="font-bold text-lg mb-1">No quizzes yet</h3>
                   <p className="text-muted-foreground">Upload a document and generate your first quiz</p>
                 </motion.div>
@@ -655,7 +659,7 @@ const RoomPage = () => {
             <TabsContent value="documents" className="space-y-6">
               {documents.length === 0 ? (
                 <motion.div {...itemProps} className="bento-card py-16 flex flex-col items-center text-center">
-                  <FileText className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <DocumentFunnelIllustration className="w-40 h-32 mb-4" />
                   <h3 className="font-bold text-lg mb-1">No documents yet</h3>
                   <p className="text-muted-foreground mb-4">Upload your first study material</p>
                   <Button onClick={() => setIsUploadOpen(true)} className="gap-2">
