@@ -30,10 +30,12 @@ interface Achievement {
   earned_at?: string;
 }
 
-const XP_PER_LEVEL = 100;
 const XP_PER_CORRECT = 10;
 const XP_PER_QUIZ = 25;
 const XP_BONUS_PERFECT = 50;
+
+/** Progressive XP curve: each level requires more XP */
+const xpForLevel = (level: number): number => 100 * level;
 
 export function useGamification() {
   const { user } = useAuth();
@@ -90,16 +92,29 @@ export function useGamification() {
   }, [user, fetchStats, fetchAchievements]);
 
   const calculateLevel = (xp: number): number => {
-    return Math.floor(xp / XP_PER_LEVEL) + 1;
+    let level = 1;
+    let xpNeeded = 0;
+    while (xpNeeded + xpForLevel(level) <= xp) {
+      xpNeeded += xpForLevel(level);
+      level++;
+    }
+    return level;
   };
 
   const getXpProgress = (): { current: number; max: number; percentage: number } => {
-    if (!stats) return { current: 0, max: XP_PER_LEVEL, percentage: 0 };
-    const currentLevelXp = stats.xp % XP_PER_LEVEL;
+    if (!stats) return { current: 0, max: xpForLevel(1), percentage: 0 };
+    let level = 1;
+    let xpUsed = 0;
+    while (xpUsed + xpForLevel(level) <= stats.xp) {
+      xpUsed += xpForLevel(level);
+      level++;
+    }
+    const currentLevelXp = stats.xp - xpUsed;
+    const maxXp = xpForLevel(level);
     return {
       current: currentLevelXp,
-      max: XP_PER_LEVEL,
-      percentage: (currentLevelXp / XP_PER_LEVEL) * 100
+      max: maxXp,
+      percentage: (currentLevelXp / maxXp) * 100
     };
   };
 
