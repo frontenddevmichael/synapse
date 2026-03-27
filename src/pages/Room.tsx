@@ -2,8 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Upload, FileText, Sparkles, Trophy, Users, Settings, Copy, Check,
-  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award
+  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye
 } from 'lucide-react';
+import { CardCascadeIllustration } from '@/components/illustrations/CardCascadeIllustration';
+import { DocumentFunnelIllustration } from '@/components/illustrations/DocumentFunnelIllustration';
+import { ActivityFeed } from '@/components/room/ActivityFeed';
+import { DocumentPreview } from '@/components/room/DocumentPreview';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -167,15 +171,17 @@ const RoomPage = () => {
     if (roomData.leaderboard_enabled) {
       const { data: attemptsData } = await supabase
         .from('quiz_attempts')
-        .select(`user_id, score, quiz:quizzes!inner(room_id)`)
+        .select(`user_id, score, quiz:quizzes!inner(room_id, difficulty)`)
         .eq('quiz.room_id', roomId)
         .eq('status', 'completed');
 
       if (attemptsData) {
-        const scoreMap: Record<string, { total: number; count: number }> = {};
+        const scoreMap: Record<string, { weighted: number; count: number }> = {};
         attemptsData.forEach((attempt: any) => {
-          if (!scoreMap[attempt.user_id]) scoreMap[attempt.user_id] = { total: 0, count: 0 };
-          scoreMap[attempt.user_id].total += attempt.score || 0;
+          if (!scoreMap[attempt.user_id]) scoreMap[attempt.user_id] = { weighted: 0, count: 0 };
+          // Weight by difficulty: easy=1, medium=1.5, hard=2
+          const diffWeight = attempt.quiz?.difficulty === 'hard' ? 2 : attempt.quiz?.difficulty === 'medium' ? 1.5 : 1;
+          scoreMap[attempt.user_id].weighted += (attempt.score || 0) * diffWeight;
           scoreMap[attempt.user_id].count += 1;
         });
 
@@ -186,7 +192,7 @@ const RoomPage = () => {
             const profile = profiles?.find((p: any) => p.id === userId);
             return {
               user_id: userId, username: profile?.username || 'Unknown',
-              total_score: scoreMap[userId].total, quizzes_taken: scoreMap[userId].count,
+              total_score: Math.round(scoreMap[userId].weighted), quizzes_taken: scoreMap[userId].count,
             };
           }).sort((a, b) => b.total_score - a.total_score);
           setLeaderboard(leaderboardData);
@@ -470,6 +476,10 @@ const RoomPage = () => {
               </DialogContent>
             </Dialog>
           </motion.div>
+          {/* Activity Feed */}
+          <div className="container max-w-6xl px-3 sm:px-8 pb-4">
+            <ActivityFeed roomId={room.id} />
+          </div>
         </div>
       </motion.div>
 
@@ -578,7 +588,7 @@ const RoomPage = () => {
               {/* Quiz Grid */}
               {quizzes.length === 0 ? (
                 <motion.div {...itemProps} className="bento-card py-16 flex flex-col items-center text-center">
-                  <Sparkles className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <CardCascadeIllustration className="w-40 h-32 mb-4" />
                   <h3 className="font-bold text-lg mb-1">No quizzes yet</h3>
                   <p className="text-muted-foreground">Upload a document and generate your first quiz</p>
                 </motion.div>
@@ -649,7 +659,7 @@ const RoomPage = () => {
             <TabsContent value="documents" className="space-y-6">
               {documents.length === 0 ? (
                 <motion.div {...itemProps} className="bento-card py-16 flex flex-col items-center text-center">
-                  <FileText className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <DocumentFunnelIllustration className="w-40 h-32 mb-4" />
                   <h3 className="font-bold text-lg mb-1">No documents yet</h3>
                   <p className="text-muted-foreground mb-4">Upload your first study material</p>
                   <Button onClick={() => setIsUploadOpen(true)} className="gap-2">
@@ -669,7 +679,10 @@ const RoomPage = () => {
                             </div>
                             <div className="min-w-0">
                               <h3 className="font-bold truncate">{doc.name}</h3>
-                              <p className="text-xs text-muted-foreground">{new Date(doc.created_at).toLocaleDateString()}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs text-muted-foreground">{new Date(doc.created_at).toLocaleDateString()}</p>
+                                {doc.content && <DocumentPreview name={doc.name} content={doc.content} />}
+                              </div>
                             </div>
                           </div>
                           {user?.id === room.owner_id && (
@@ -835,7 +848,7 @@ const RoomPage = () => {
                             </div>
                             <div className="text-right">
                               <p className="font-black text-xl">{entry.total_score}</p>
-                              <p className="text-2xs text-muted-foreground uppercase tracking-wider">points</p>
+                              <p className="text-2xs text-muted-foreground uppercase tracking-wider">weighted pts</p>
                             </div>
                           </motion.div>
                         ))}

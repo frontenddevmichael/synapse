@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Users, BookOpen, Trophy, LogOut, Settings, BarChart3, User, Zap, Flame, Bookmark } from 'lucide-react';
 import { EmptyDeskIllustration } from '@/components/illustrations/EmptyDeskIllustration';
+import { OnboardingCard } from '@/components/dashboard/OnboardingCard';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -98,10 +99,11 @@ const Dashboard = () => {
     fetchRooms();
   };
 
-  const handleJoinRoom = async () => {
-    if (!user || !joinCode.trim()) return;
+  const handleJoinRoom = async (codeOverride?: string) => {
+    const code = codeOverride || joinCode.trim().toUpperCase();
+    if (!user || !code) return;
     setIsSubmitting(true);
-    const { data: room } = await supabase.from('rooms').select('*').eq('code', joinCode.trim().toUpperCase()).maybeSingle();
+    const { data: room } = await supabase.from('rooms').select('*').eq('code', code).maybeSingle();
     if (!room) {
       toast({ title: 'Room not found', description: 'Check the code and try again.', variant: 'destructive' });
       setIsSubmitting(false);
@@ -302,14 +304,21 @@ const Dashboard = () => {
                       <DialogTitle className="text-xl font-bold">Join room</DialogTitle>
                       <DialogDescription>Enter the room code from your group</DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-5 pt-2">
+                     <div className="space-y-5 pt-2">
                       <div className="space-y-2">
                         <Label htmlFor="joinCode">Room code</Label>
                         <Input id="joinCode" placeholder="ABC123" value={joinCode}
-                          onChange={(e) => setJoinCode(e.target.value.toUpperCase())} maxLength={6}
+                          onChange={(e) => {
+                            const val = e.target.value.toUpperCase();
+                            setJoinCode(val);
+                            // Auto-submit on 6 valid characters
+                            if (val.length === 6 && !isSubmitting) {
+                              handleJoinRoom(val);
+                            }
+                          }} maxLength={6}
                           className="text-center text-2xl tracking-[0.3em] font-mono h-14" />
                       </div>
-                      <Button className="w-full h-11 font-semibold" onClick={handleJoinRoom} disabled={isSubmitting || joinCode.length !== 6}>
+                      <Button className="w-full h-11 font-semibold" onClick={() => handleJoinRoom()} disabled={isSubmitting || joinCode.length !== 6}>
                         Join room
                       </Button>
                     </div>
@@ -326,13 +335,19 @@ const Dashboard = () => {
                     ))}
                   </div>
                 ) : rooms.length === 0 ? (
-                  <motion.div {...itemProps} className="bento-card py-12 sm:py-16 flex flex-col items-center text-center">
-                    <EmptyDeskIllustration className="w-48 h-36 mb-3 sm:mb-4" />
-                    <h3 className="font-bold text-base sm:text-lg mb-1">Nothing here yet</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Create a room or paste a code to join one
-                    </p>
-                  </motion.div>
+                  <div className="space-y-4">
+                    {/* Show onboarding for brand new users */}
+                    {stats && stats.total_quizzes_completed === 0 && (
+                      <OnboardingCard onCreateRoom={() => setIsCreateOpen(true)} />
+                    )}
+                    <motion.div {...itemProps} className="bento-card py-12 sm:py-16 flex flex-col items-center text-center">
+                      <EmptyDeskIllustration className="w-48 h-36 mb-3 sm:mb-4" />
+                      <h3 className="font-bold text-base sm:text-lg mb-1">Nothing here yet</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Create a room or paste a code to join one
+                      </p>
+                    </motion.div>
+                  </div>
                 ) : (
                   <div className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
                     {rooms.map((room, index) => (

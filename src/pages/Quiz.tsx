@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, CheckCircle, XCircle, Loader2, AlertTriangle, Lock, Star, Zap, Bookmark, BookmarkCheck } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle, XCircle, Loader2, AlertTriangle, Lock, Star, Zap, Bookmark, BookmarkCheck, Share2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +18,12 @@ import { useGamification } from '@/hooks/useGamification';
 import { useActiveSession } from '@/hooks/useActiveSession';
 import { AchievementToast } from '@/components/gamification/AchievementToast';
 import { LevelUpOverlay } from '@/components/gamification/LevelUpOverlay';
+import { TypewriterText } from '@/components/quiz/TypewriterText';
+import { AnimatedScore } from '@/components/quiz/AnimatedScore';
+import { RetryMistakesButton } from '@/components/quiz/RetryMistakesButton';
+import { PersonalBest } from '@/components/quiz/PersonalBest';
+import { useConfetti } from '@/hooks/useConfetti';
+import { useKeyboardNav } from '@/hooks/useKeyboardNav';
 import { fadeUp, stagger } from '@/lib/motion';
 
 interface Quiz {
@@ -62,6 +68,7 @@ const QuizPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { updateStatsOnQuizComplete, newAchievement, clearNewAchievement } = useGamification();
+  const { firePerfectScore, fireSmall } = useConfetti();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -80,8 +87,9 @@ const QuizPage = () => {
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(new Set());
   const [hasCompletedAttempt, setHasCompletedAttempt] = useState(false);
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<string>>(new Set());
+  const [previousBestScore, setPreviousBestScore] = useState<number | null>(null);
+  const [showTypewriter, setShowTypewriter] = useState(true);
 
-  // Fetch bookmarks for current user
   const fetchBookmarks = async () => {
     if (!user) return;
     const { data } = await supabase
@@ -126,7 +134,15 @@ const QuizPage = () => {
     const { data: attemptData } = await supabase.from('quiz_attempts').select('*').eq('quiz_id', quizId).eq('user_id', user.id).order('created_at', { ascending: false });
     if (attemptData && attemptData.length > 0) {
       const latestAttempt = attemptData[0] as QuizAttempt;
-      setHasCompletedAttempt(attemptData.some((a: any) => a.status === 'completed'));
+      const completedAttempts = attemptData.filter((a: any) => a.status === 'completed');
+      setHasCompletedAttempt(completedAttempts.length > 0);
+      
+      // Track personal best
+      if (completedAttempts.length > 0) {
+        const best = Math.max(...completedAttempts.map((a: any) => a.score || 0));
+        setPreviousBestScore(best);
+      }
+      
       if (latestAttempt.status === 'completed') {
         setAttempt(latestAttempt); setShowResults(true); setAnswers((latestAttempt.answers as Record<string, string>) || {});
       } else if (latestAttempt.status === 'in_progress') {
@@ -138,7 +154,6 @@ const QuizPage = () => {
     setIsLoading(false);
   };
 
-  // Active session tracking
   const { startSession, updateProgress, endSession } = useActiveSession({
     quizId: quizId || '',
     roomId: quiz?.room_id || '',
@@ -150,7 +165,7 @@ const QuizPage = () => {
     if (roomMode === 'exam' && hasCompletedAttempt) { toast({ title: 'Quiz already completed', description: 'Exam mode only allows one attempt.', variant: 'destructive' }); return; }
     const { data, error } = await supabase.from('quiz_attempts').insert({ quiz_id: quizId, user_id: user.id, status: 'in_progress', started_at: new Date().toISOString(), total_questions: questions.length, answers: {} }).select().single();
     if (error) { toast({ title: 'Failed to start quiz', description: error.message, variant: 'destructive' }); return; }
-    setAttempt(data as QuizAttempt); setAnsweredQuestions(new Set());
+    setAttempt(data as QuizAttempt); setAnsweredQuestions(new Set()); setShowTypewriter(true);
     startSession();
   };
 
@@ -175,6 +190,14 @@ const QuizPage = () => {
     const score = Math.round((correctCount / questions.length) * 100);
     const { error } = await supabase.from('quiz_attempts').update({ status: 'completed', score, answers, completed_at: new Date().toISOString() }).eq('id', attempt.id);
     if (error) { toast({ title: 'Failed to submit', description: error.message, variant: 'destructive' }); setIsSubmitting(false); return; }
+    
+    // Fire confetti for perfect scores
+    if (score === 100) {
+      setTimeout(() => firePerfectScore(), 300);
+    } else if (score >= 80) {
+      setTimeout(() => fireSmall(), 300);
+    }
+    
     try {
       const { data: prevAttempts } = await supabase.from('quiz_attempts').select('score').eq('quiz_id', quizId).eq('user_id', user.id).eq('status', 'completed').neq('id', attempt.id).order('completed_at', { ascending: false }).limit(1);
       const previousScore = prevAttempts?.[0]?.score ?? null;
@@ -188,15 +211,86 @@ const QuizPage = () => {
         await supabase.from('daily_activity').insert({ user_id: user.id, date: today, quizzes_completed: 1, correct_answers: correctCount, total_answers: questions.length, xp_earned: gamResult?.xpEarned || 0, perfect_quizzes: score === 100 ? 1 : 0 });
       }
     } catch (err) { console.error('Gamification update error:', err); }
+    
+    // Update personal best
+    const isNewBest = previousBestScore === null || score > previousBestScore;
+    if (isNewBest) setPreviousBestScore(score);
+    
     setAttempt({ ...attempt, status: 'completed', score }); setShowResults(true); setIsSubmitting(false);
     endSession();
-    toast({ title: 'Quiz completed!', description: `You scored ${score}%` });
+    toast({ title: score === 100 ? '🎉 Perfect score!' : 'Quiz completed!', description: `You scored ${score}%` });
+  };
+
+  // Retry only incorrect questions
+  const handleRetryMistakes = async () => {
+    if (!quizId || !user) return;
+    const incorrectQuestionIds = questions
+      .filter(q => answers[q.id] !== q.correct_answer)
+      .map(q => q.id);
+    
+    if (incorrectQuestionIds.length === 0) return;
+    
+    // Create a new attempt with only incorrect questions tracked
+    const { data, error } = await supabase.from('quiz_attempts').insert({
+      quiz_id: quizId, user_id: user.id, status: 'in_progress',
+      started_at: new Date().toISOString(), total_questions: questions.length, answers: {}
+    }).select().single();
+    
+    if (error) { toast({ title: 'Failed to start retry', variant: 'destructive' }); return; }
+    
+    setAttempt(data as QuizAttempt);
+    // Pre-fill correct answers, only show incorrect ones
+    const prefilledAnswers: Record<string, string> = {};
+    questions.forEach(q => {
+      if (answers[q.id] === q.correct_answer) {
+        prefilledAnswers[q.id] = q.correct_answer;
+      }
+    });
+    setAnswers(prefilledAnswers);
+    setAnsweredQuestions(new Set(Object.keys(prefilledAnswers)));
+    setShowResults(false);
+    
+    // Jump to first incorrect question
+    const firstIncorrectIndex = questions.findIndex(q => incorrectQuestionIds.includes(q.id));
+    setCurrentQuestionIndex(firstIncorrectIndex >= 0 ? firstIncorrectIndex : 0);
+    setShowTypewriter(true);
+    startSession();
+  };
+
+  // Share score
+  const handleShareScore = () => {
+    const score = attempt?.score || 0;
+    const text = `I scored ${score}% on "${quiz?.title}" on Synapse! 🧠⚡`;
+    if (navigator.share) {
+      navigator.share({ title: 'Synapse Quiz Result', text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text);
+      toast({ title: 'Score copied to clipboard!' });
+    }
   };
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
   const currentQuestionAnswered = currentQuestion && answeredQuestions.has(currentQuestion.id);
   const shouldShowAnswerReview = roomMode !== 'exam' || (userPreferences?.show_answers_immediately ?? true);
+
+  // Keyboard navigation
+  useKeyboardNav({
+    options: currentQuestion?.options || [],
+    onSelect: (option) => currentQuestion && selectAnswer(currentQuestion.id, option),
+    onNext: () => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1)),
+    onPrev: () => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1)),
+    onSubmit: submitQuiz,
+    enabled: !!attempt && attempt.status === 'in_progress' && !showResults,
+    isLastQuestion: currentQuestionIndex === questions.length - 1,
+    canSubmit: Object.keys(answers).length >= questions.length && !isSubmitting,
+    disabled: roomMode === 'study' && currentQuestionAnswered,
+  });
+
+  // Reset typewriter on question change
+  useEffect(() => {
+    setShowTypewriter(true);
+  }, [currentQuestionIndex]);
 
   const getModeBackground = () => {
     switch (roomMode) {
@@ -252,6 +346,15 @@ const QuizPage = () => {
                 <Badge variant="outline">{questions.length} question{questions.length !== 1 ? 's' : ''}</Badge>
                 {effectiveTimeLimit && <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" />{effectiveTimeLimit} min</Badge>}
               </div>
+              
+              {/* Keyboard hint */}
+              <div className="hidden sm:flex items-center justify-center gap-2 mb-4 text-xs text-muted-foreground">
+                <kbd className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono text-[10px]">A-D</kbd>
+                <span>to answer</span>
+                <kbd className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono text-[10px]">←→</kbd>
+                <span>to navigate</span>
+              </div>
+              
               <div className={`p-4 rounded-xl border border-border/30 mb-6 ${getModeBackground()}`}>
                 <p className={`text-sm font-medium ${getModeAccentColor()}`}>
                   {roomMode === 'study' ? 'Answers revealed after each question' : roomMode === 'challenge' ? 'Timed quiz with leaderboard' : 'Single attempt, no review'}
@@ -278,6 +381,10 @@ const QuizPage = () => {
   // Results screen
   if (showResults && attempt.status === 'completed') {
     const correctCount = questions.filter(q => answers[q.id] === q.correct_answer).length;
+    const incorrectCount = questions.length - correctCount;
+    const score = attempt.score || 0;
+    const isNewBest = previousBestScore !== null && score >= previousBestScore;
+
     return (
       <div className={`min-h-screen flex flex-col bg-background noise-bg ${getModeBackground()}`}>
         <LevelUpOverlay level={newLevel || 1} show={leveledUp} onClose={() => setLeveledUp(false)} />
@@ -293,12 +400,22 @@ const QuizPage = () => {
           <motion.div variants={stagger} initial="hidden" animate="visible">
             <motion.div variants={fadeUp} className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-6 sm:p-8 lg:p-12 mb-6 sm:mb-8 text-center shadow-xl">
               <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3 sm:mb-4">Quiz Complete</p>
-              <div className="score-reveal text-6xl sm:text-7xl lg:text-8xl font-black tracking-tighter mb-3 sm:mb-4">
-                {attempt.score}%
+              <div className="text-6xl sm:text-7xl lg:text-8xl font-black tracking-tighter mb-3 sm:mb-4">
+                <AnimatedScore score={score} />
               </div>
-              <p className="text-base sm:text-lg text-muted-foreground mb-4 sm:mb-6">{correctCount} out of {questions.length} correct</p>
+              <p className="text-base sm:text-lg text-muted-foreground mb-2">{correctCount} out of {questions.length} correct</p>
+              
+              {/* Personal best indicator */}
+              <div className="flex justify-center mb-4">
+                <PersonalBest
+                  currentScore={score}
+                  previousBest={previousBestScore}
+                  isNewBest={isNewBest}
+                />
+              </div>
+              
               {xpEarned !== null && (
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mb-6">
                   <div className="flex items-center gap-2 text-primary font-bold animate-count-up">
                     <Zap className="h-5 w-5" />
                     +{xpEarned} XP
@@ -311,7 +428,16 @@ const QuizPage = () => {
                   )}
                 </div>
               )}
-              <Button onClick={() => navigate(-1)} className="mt-6 sm:mt-8 h-11 px-8 font-semibold w-full sm:w-auto">Back to Room</Button>
+              
+              {/* Action buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6 sm:mt-8">
+                <Button onClick={() => navigate(-1)} className="h-11 px-8 font-semibold w-full sm:w-auto">Back to Room</Button>
+                <RetryMistakesButton incorrectCount={incorrectCount} onClick={handleRetryMistakes} />
+                <Button variant="ghost" size="sm" onClick={handleShareScore} className="gap-2 text-muted-foreground">
+                  <Share2 className="h-4 w-4" />
+                  Share
+                </Button>
+              </div>
             </motion.div>
 
             {shouldShowAnswerReview && (
@@ -368,7 +494,6 @@ const QuizPage = () => {
     <div className={`min-h-screen flex flex-col bg-background noise-bg ${getModeBackground()}`}>
       {newAchievement && <AchievementToast name={newAchievement.name} description={newAchievement.description} icon={newAchievement.icon} xpReward={newAchievement.xp_reward} onClose={clearNewAchievement} />}
 
-      {/* Minimal header — two rows on mobile */}
       <header className="p-3 sm:p-4 lg:p-6">
         <div className="flex items-center justify-between">
           <Logo showText={false} />
@@ -379,7 +504,6 @@ const QuizPage = () => {
             <Badge variant="outline" className={`${roomMode === 'study' ? 'mode-study' : roomMode === 'challenge' ? 'mode-challenge' : 'mode-exam'} font-semibold text-[10px] sm:text-xs`}>
               {roomMode}
             </Badge>
-            {/* Mobile: text counter instead of dots */}
             <span className="text-xs sm:text-sm text-muted-foreground font-mono">
               {currentQuestionIndex + 1}/{questions.length}
             </span>
@@ -387,12 +511,10 @@ const QuizPage = () => {
         </div>
       </header>
 
-      {/* Progress bar */}
       <div className="px-3 sm:px-8">
         <Progress value={progress} className="h-1 sm:h-1.5 rounded-full" />
       </div>
 
-      {/* Question — near fullscreen */}
       <main className="flex-1 flex items-center justify-center p-3 sm:p-8">
         {currentQuestion && (
           <motion.div
@@ -402,9 +524,17 @@ const QuizPage = () => {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="w-full max-w-2xl"
           >
-            {/* Question text — bookmark below on mobile */}
+            {/* Question text with typewriter effect in exam mode */}
             <p className="font-serif text-xl sm:text-2xl lg:text-3xl xl:text-4xl leading-relaxed text-center text-balance mb-2 sm:mb-0">
-              {currentQuestion.question_text}
+              {roomMode === 'exam' && showTypewriter ? (
+                <TypewriterText
+                  text={currentQuestion.question_text}
+                  speed={15}
+                  onComplete={() => setShowTypewriter(false)}
+                />
+              ) : (
+                currentQuestion.question_text
+              )}
             </p>
             <div className="flex items-center justify-center gap-2 mb-6 sm:mb-10">
               <Button
@@ -464,7 +594,6 @@ const QuizPage = () => {
               <StudyModeAnswer options={currentQuestion.options} selectedAnswer={answers[currentQuestion.id]} correctAnswer={currentQuestion.correct_answer} explanation={currentQuestion.explanation} showFeedback={true} />
             )}
 
-            {/* Navigation — sticky bottom bar on mobile */}
             <div className="flex justify-between items-center gap-3">
               <Button variant="ghost" onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))} disabled={currentQuestionIndex === 0} className="font-semibold min-h-[44px] flex-1 sm:flex-none">
                 Previous
@@ -480,11 +609,15 @@ const QuizPage = () => {
                 </Button>
               )}
             </div>
+
+            {/* Keyboard hint */}
+            <div className="hidden sm:flex justify-center mt-4 text-2xs text-muted-foreground/50">
+              Press A-D to answer · ←→ to navigate
+            </div>
           </motion.div>
         )}
       </main>
 
-      {/* Question dots — hidden on mobile (use text counter), visible on desktop */}
       <div className="hidden sm:flex justify-center gap-1.5 pb-6 flex-wrap px-4">
         {questions.map((q, i) => (
           <button key={q.id} onClick={() => setCurrentQuestionIndex(i)}
