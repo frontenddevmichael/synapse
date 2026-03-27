@@ -679,7 +679,10 @@ const RoomPage = () => {
                             </div>
                             <div className="min-w-0">
                               <h3 className="font-bold truncate">{doc.name}</h3>
-                              <p className="text-xs text-muted-foreground">{new Date(doc.created_at).toLocaleDateString()}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs text-muted-foreground">{new Date(doc.created_at).toLocaleDateString()}</p>
+                                {doc.content && <DocumentPreview name={doc.name} content={doc.content} />}
+                              </div>
                             </div>
                           </div>
                           {user?.id === room.owner_id && (
