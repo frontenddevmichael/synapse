@@ -310,7 +310,7 @@ const QuizPage = () => {
 
   if (isLoading || !quiz) {
     return (
-      <div className={`min-h-screen flex items-center justify-center bg-background noise-bg ${getModeBackground()}`}>
+      <div className={`min-h-screen flex items-center justify-center bg-background dot-grid ${getModeBackground()}`}>
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-muted-foreground font-medium">Loading quiz...</p>
@@ -323,7 +323,7 @@ const QuizPage = () => {
   if (!attempt || attempt.status === 'not_started') {
     const isExamBlocked = roomMode === 'exam' && hasCompletedAttempt;
     return (
-      <div className={`min-h-screen flex flex-col bg-background noise-bg ${getModeBackground()}`}>
+      <div className={`min-h-screen flex flex-col bg-background dot-grid ${getModeBackground()}`}>
         <header className="flex items-center justify-between p-4 sm:p-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4" /></Button>
@@ -338,7 +338,7 @@ const QuizPage = () => {
         </header>
         <main className="flex-1 flex items-center justify-center p-4">
           <motion.div variants={stagger} initial="hidden" animate="visible" className="w-full max-w-md">
-            <motion.div variants={fadeUp} className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-8 shadow-xl text-center">
+            <motion.div variants={fadeUp} className="rounded-sm border border-border/50 bg-card p-8 shadow-lg text-center">
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">{quiz.title}</h1>
               {quiz.description && <p className="text-muted-foreground mb-6">{quiz.description}</p>}
               <div className="flex flex-wrap justify-center gap-2 mb-6">
@@ -386,7 +386,7 @@ const QuizPage = () => {
     const isNewBest = previousBestScore !== null && score >= previousBestScore;
 
     return (
-      <div className={`min-h-screen flex flex-col bg-background noise-bg ${getModeBackground()}`}>
+      <div className={`min-h-screen flex flex-col bg-background dot-grid ${getModeBackground()}`}>
         <LevelUpOverlay level={newLevel || 1} show={leveledUp} onClose={() => setLeveledUp(false)} />
         {newAchievement && <AchievementToast name={newAchievement.name} description={newAchievement.description} icon={newAchievement.icon} xpReward={newAchievement.xp_reward} onClose={clearNewAchievement} />}
         <header className="flex items-center justify-between p-4 sm:p-6">
@@ -398,9 +398,9 @@ const QuizPage = () => {
         </header>
         <main className="flex-1 container max-w-3xl py-6 sm:py-8 px-4">
           <motion.div variants={stagger} initial="hidden" animate="visible">
-            <motion.div variants={fadeUp} className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-6 sm:p-8 lg:p-12 mb-6 sm:mb-8 text-center shadow-xl">
-              <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3 sm:mb-4">Quiz Complete</p>
-              <div className="text-6xl sm:text-7xl lg:text-8xl font-black tracking-tighter mb-3 sm:mb-4">
+            <motion.div variants={fadeUp} className="rounded-sm border border-border/50 bg-card p-6 sm:p-8 lg:p-12 mb-6 sm:mb-8 text-center shadow-lg">
+              <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3 sm:mb-4">Quiz Complete</p>
+              <div className="text-6xl sm:text-7xl lg:text-8xl font-black tracking-tighter mb-3 sm:mb-4 text-electric">
                 <AnimatedScore score={score} />
               </div>
               <p className="text-base sm:text-lg text-muted-foreground mb-2">{correctCount} out of {questions.length} correct</p>
@@ -447,7 +447,7 @@ const QuizPage = () => {
                   const userAnswer = answers[question.id];
                   const isCorrect = userAnswer === question.correct_answer;
                   return (
-                    <div key={question.id} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm p-4 sm:p-6">
+                    <div key={question.id} className="rounded-sm border border-border/50 bg-card p-4 sm:p-6">
                       <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
                         {isCorrect ? <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-success flex-shrink-0 mt-0.5" /> : <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-destructive flex-shrink-0 mt-0.5" />}
                         <p className="font-serif text-base sm:text-lg">{index + 1}. {question.question_text}</p>
@@ -477,7 +477,7 @@ const QuizPage = () => {
             )}
 
             {!shouldShowAnswerReview && (
-              <motion.div variants={fadeUp} className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm p-8 sm:p-12 text-center">
+              <motion.div variants={fadeUp} className="rounded-sm border border-border/50 bg-card p-8 sm:p-12 text-center">
                 <Lock className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50 mx-auto mb-4" />
                 <h3 className="font-bold text-lg mb-2">Review Hidden</h3>
                 <p className="text-muted-foreground text-sm">Exam mode does not allow answer review.</p>
@@ -491,7 +491,7 @@ const QuizPage = () => {
 
   // Quiz in progress — fullscreen focus
   return (
-    <div className={`min-h-screen flex flex-col bg-background noise-bg ${getModeBackground()}`}>
+    <div className={`min-h-screen flex flex-col bg-background dot-grid ${getModeBackground()}`}>
       {newAchievement && <AchievementToast name={newAchievement.name} description={newAchievement.description} icon={newAchievement.icon} xpReward={newAchievement.xp_reward} onClose={clearNewAchievement} />}
 
       <header className="p-3 sm:p-4 lg:p-6">
@@ -567,7 +567,7 @@ const QuizPage = () => {
                     onClick={() => selectAnswer(currentQuestion.id, option)}
                     disabled={roomMode === 'study' && currentQuestionAnswered}
                     className={cn(
-                      'w-full p-4 sm:p-5 text-left rounded-xl border-2 transition-all duration-200 font-medium text-sm sm:text-base min-h-[52px]',
+                      'w-full p-4 sm:p-5 text-left rounded-lg border-2 transition-all duration-200 font-medium text-sm sm:text-base min-h-[52px]',
                       !showStudyFeedback && isSelected
                         ? 'border-primary bg-primary/10 shadow-md'
                         : !showStudyFeedback && 'border-border/50 hover:border-primary/40 hover:bg-primary/5',
