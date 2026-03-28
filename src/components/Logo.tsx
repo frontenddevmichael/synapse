@@ -20,7 +20,7 @@ const SynapseMark = ({ className }: { className?: string }) => (
     <path
       d="M16 11V16M16 16L10 22M16 16L22 22"
       className="stroke-current"
-      strokeWidth="2"
+      strokeWidth="2.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
@@ -30,25 +30,25 @@ const SynapseMark = ({ className }: { className?: string }) => (
 
 export const Logo = ({ size = 'md', showText = true, className }: LogoProps) => {
   const iconSizes = {
-    sm: 'h-6 w-6',
-    md: 'h-7 w-7',
-    lg: 'h-10 w-10',
+    sm: 'h-5 w-5',
+    md: 'h-6 w-6',
+    lg: 'h-8 w-8',
   };
 
   const textSizes = {
-    sm: 'text-lg',
-    md: 'text-xl',
-    lg: 'text-3xl',
+    sm: 'text-xs',
+    md: 'text-sm',
+    lg: 'text-base',
   };
 
   return (
-    <div className={cn('flex items-center gap-2.5', className)}>
+    <div className={cn('flex items-center gap-2', className)}>
       <div className="text-primary">
         <SynapseMark className={cn(iconSizes[size])} />
       </div>
       {showText && (
         <span className={cn(
-          'font-bold tracking-tighter text-foreground',
+          'font-black uppercase tracking-[0.15em] text-foreground',
           textSizes[size]
         )}>
           Synapse
