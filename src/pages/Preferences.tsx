@@ -66,15 +66,15 @@ const Preferences = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background noise-bg mesh-gradient">
+      <div className="min-h-screen flex items-center justify-center bg-background dot-grid">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background noise-bg mesh-gradient pb-14 sm:pb-0">
-      <header className="flex items-center justify-between p-4 sm:p-6 border-b border-border/30 bg-background/60 backdrop-blur-xl sticky top-0 z-40">
+    <div className="min-h-screen flex flex-col bg-background dot-grid pb-14 sm:pb-0">
+      <header className="flex items-center justify-between p-4 sm:p-6 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-40">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="min-h-[44px] min-w-[44px]"><ArrowLeft className="h-4 w-4" /></Button>
           <Logo />

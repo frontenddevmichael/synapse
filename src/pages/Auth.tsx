@@ -100,13 +100,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background noise-bg mesh-gradient-auth">
-      {/* Decorative elements */}
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-1/2 -right-1/4 w-[600px] h-[600px] rounded-full bg-primary/5 blur-[120px]" />
-        <div className="absolute -bottom-1/4 -left-1/4 w-[500px] h-[500px] rounded-full bg-mode-study/5 blur-[100px]" />
-      </div>
-
+    <div className="min-h-screen flex flex-col bg-background dot-grid">
       {/* Header */}
       <header className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5">
         <Logo size="lg" />
@@ -133,16 +127,11 @@ const Auth = () => {
             </p>
           </motion.div>
 
-          {/* Form card */}
+          {/* Form card — sharp top border */}
           <motion.div
             variants={fadeUp}
-            className="relative rounded-t-2xl sm:rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-5 sm:p-8 shadow-xl -mx-4 sm:mx-0"
+            className="relative rounded-none sm:rounded-sm border-t-[3px] border-t-primary border border-border/50 bg-card p-5 sm:p-8 shadow-lg -mx-4 sm:mx-0"
           >
-            {/* Diagonal accent — hidden on mobile */}
-            <div className="hidden sm:block absolute -right-px -top-px h-20 w-20 overflow-hidden rounded-tr-2xl">
-              <div className="absolute -right-10 -top-10 h-20 w-20 rotate-45 bg-primary/10" />
-            </div>
-
             {isSignUp ? (
               <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4 sm:space-y-5">
                 <div className="space-y-2">
@@ -200,7 +189,7 @@ const Auth = () => {
                   )}
                 </div>
 
-                <Button type="submit" className="w-full h-11 sm:h-12 text-base font-semibold gap-2" disabled={isLoading}>
+                <Button type="submit" className="w-full h-11 sm:h-12 text-base font-bold gap-2 uppercase tracking-wider" disabled={isLoading}>
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
                   Create account
                 </Button>
@@ -248,7 +237,7 @@ const Auth = () => {
                   )}
                 </div>
 
-                <Button type="submit" className="w-full h-11 sm:h-12 text-base font-semibold gap-2" disabled={isLoading}>
+                <Button type="submit" className="w-full h-11 sm:h-12 text-base font-bold gap-2 uppercase tracking-wider" disabled={isLoading}>
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
                   Sign in
                 </Button>
@@ -262,7 +251,7 @@ const Auth = () => {
                   <button
                     type="button"
                     onClick={() => setIsSignUp(false)}
-                    className="text-primary font-semibold hover:underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center"
+                    className="text-primary font-bold hover:underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center"
                   >
                     Sign in
                   </button>
@@ -273,7 +262,7 @@ const Auth = () => {
                   <button
                     type="button"
                     onClick={() => setIsSignUp(true)}
-                    className="text-primary font-semibold hover:underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center"
+                    className="text-primary font-bold hover:underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center"
                   >
                     Create account
                   </button>

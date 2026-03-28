@@ -79,15 +79,15 @@ export default {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		fontFamily: {
-  			sans: ['Outfit', 'system-ui', 'sans-serif'],
-  			serif: ['DM Serif Display', 'Georgia', 'serif'],
+  			sans: ['Satoshi', 'system-ui', 'sans-serif'],
+  			serif: ['Fraunces', 'Georgia', 'serif'],
   			mono: ['JetBrains Mono', 'monospace'],
-  			display: ['Outfit', 'system-ui', 'sans-serif']
+  			display: ['Satoshi', 'system-ui', 'sans-serif']
   		},
   		fontSize: {
 			'2xs': ['0.6875rem', { lineHeight: '1rem' }],
-			'display-xl': ['2.5rem', { lineHeight: '1.05', letterSpacing: '-0.03em' }],
-			'display-lg': ['2rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
+			'display-xl': ['2.5rem', { lineHeight: '1.05', letterSpacing: '-0.04em' }],
+			'display-lg': ['2rem', { lineHeight: '1.1', letterSpacing: '-0.03em' }],
 			'display-md': ['1.75rem', { lineHeight: '1.15', letterSpacing: '-0.02em' }],
 		},
 		screens: {

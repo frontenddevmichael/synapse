@@ -141,9 +141,7 @@ const Dashboard = () => {
   const itemProps = prefersReducedMotion ? {} : { variants: fadeUp };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background noise-bg pb-14 sm:pb-0">
-      {/* Ambient background */}
-      <div className="fixed inset-0 -z-10 mesh-gradient" />
+    <div className="min-h-screen flex flex-col bg-background dot-grid pb-14 sm:pb-0">
 
       {newAchievement && (
         <AchievementToast
@@ -154,7 +152,7 @@ const Dashboard = () => {
       )}
 
       {/* Header — simplified on mobile (nav icons moved to bottom nav) */}
-      <header className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-border/30 bg-background/60 backdrop-blur-xl sticky top-0 z-40">
+      <header className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-40">
         <Logo />
         <div className="flex items-center gap-2 sm:gap-3">
           {stats && (
@@ -204,7 +202,7 @@ const Dashboard = () => {
       <main className="flex-1 container max-w-6xl py-6 sm:py-8 px-4 sm:px-8">
         <motion.div {...containerProps}>
           <motion.div {...itemProps} className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter mb-1 sm:mb-2">Home base</h1>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter mb-1 sm:mb-2 uppercase">Home base</h1>
             <p className="text-muted-foreground text-sm sm:text-lg">
               Create or join a room to start studying
             </p>

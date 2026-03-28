@@ -338,8 +338,7 @@ const RoomPage = () => {
 
   if (isLoading || !room) {
     return (
-      <div className="min-h-screen flex flex-col bg-background noise-bg">
-        <div className="fixed inset-0 -z-10 mesh-gradient" />
+      <div className="min-h-screen flex flex-col bg-background dot-grid">
         <div className="flex-1 flex items-center justify-center">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
@@ -353,13 +352,12 @@ const RoomPage = () => {
   const modeBgClass = room.mode === 'study' ? 'mode-bg-study' : room.mode === 'challenge' ? 'mode-bg-challenge' : 'mode-bg-exam';
 
   return (
-    <div className="min-h-screen flex flex-col bg-background noise-bg">
+    <div className="min-h-screen flex flex-col bg-background dot-grid">
       {/* Mode-specific ambient background */}
       <div className={`fixed inset-0 -z-10 ${modeBgClass}`} />
-      <div className="fixed inset-0 -z-10 mesh-gradient opacity-50" />
 
       {/* Header */}
-      <header className="flex items-center justify-between px-3 sm:px-8 py-3 sm:py-4 border-b border-border/30 bg-background/60 backdrop-blur-xl sticky top-0 z-40">
+      <header className="flex items-center justify-between px-3 sm:px-8 py-3 sm:py-4 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-40">
         <div className="flex items-center gap-2 sm:gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px]">
             <ArrowLeft className="h-4 w-4" />
