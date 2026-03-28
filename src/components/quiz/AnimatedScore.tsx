@@ -8,7 +8,7 @@ interface AnimatedScoreProps {
 
 export function AnimatedScore({ score, className, onEnd }: AnimatedScoreProps) {
   return (
-    <span className={className}>
+    <span className={className || 'text-electric'}>
       <CountUp
         end={score}
         duration={1.8}
