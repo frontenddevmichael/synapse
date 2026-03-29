@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users, BookOpen, Trophy, LogOut, Settings, BarChart3, User, Zap, Flame, Bookmark } from 'lucide-react';
+import { Plus, Users, BookOpen, Trophy, LogOut, Settings, BarChart3, User, Zap, Flame, Bookmark, Brain } from 'lucide-react';
 import { EmptyDeskIllustration } from '@/components/illustrations/EmptyDeskIllustration';
 import { OnboardingCard } from '@/components/dashboard/OnboardingCard';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -52,12 +52,20 @@ const Dashboard = () => {
   const [newRoomMode, setNewRoomMode] = useState<'study' | 'challenge' | 'exam'>('study');
   const [joinCode, setJoinCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [recallDueCount, setRecallDueCount] = useState(0);
 
   const xpProgress = getXpProgress();
 
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
     fetchRooms();
+    // Fetch recall due count
+    supabase
+      .from('recall_cards')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .lte('next_review_at', new Date().toISOString())
+      .then(({ count }) => setRecallDueCount(count || 0));
   }, [user, navigate]);
 
   const fetchRooms = async () => {
@@ -168,6 +176,14 @@ const Dashboard = () => {
           </Button>
           <Button variant="ghost" size="icon" onClick={() => navigate('/bookmarks')} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground" title="Study Deck">
             <Bookmark className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/recall')} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground relative" title="Recall">
+            <Brain className="h-4 w-4" />
+            {recallDueCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+                {recallDueCount > 99 ? '99+' : recallDueCount}
+              </span>
+            )}
           </Button>
           <Button variant="ghost" size="icon" onClick={() => navigate('/preferences')} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
             <Settings className="h-4 w-4" />
