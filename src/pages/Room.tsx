@@ -287,7 +287,44 @@ const RoomPage = () => {
         throw new Error('Failed to save questions');
       }
 
-      toast({ title: 'Quiz generated!', description: `Created ${aiData.questions.length} AI-powered questions.` });
+      // Phase 5 — Forge: also insert approved user_questions into this quiz
+      let forgeCount = 0;
+      try {
+        const { data: approvedUQ } = await supabase
+          .from('user_questions')
+          .select('*')
+          .eq('room_id', roomId)
+          .eq('status', 'approved');
+
+        if (approvedUQ && approvedUQ.length > 0) {
+          // Check which questions are already in this quiz (by question_text to avoid duplicates)
+          const existingTexts = new Set(questionsToInsert.map((q: any) => q.question_text));
+          const newForgeQuestions = approvedUQ
+            .filter((uq: any) => !existingTexts.has(uq.question_text))
+            .map((uq: any, idx: number) => {
+              const options = uq.question_type === 'true_false'
+                ? JSON.stringify(['True', 'False'])
+                : JSON.stringify([uq.option_a, uq.option_b, uq.option_c, uq.option_d].filter(Boolean));
+              return {
+                quiz_id: quiz.id,
+                question_text: uq.question_text,
+                question_type: uq.question_type,
+                options,
+                correct_answer: uq.correct_answer,
+                explanation: null,
+                order_index: questionsToInsert.length + idx,
+              };
+            });
+
+          if (newForgeQuestions.length > 0) {
+            await supabase.from('questions').insert(newForgeQuestions);
+            forgeCount = newForgeQuestions.length;
+          }
+        }
+      } catch (forgeErr) { console.error('Forge integration error:', forgeErr); }
+
+      const totalQ = aiData.questions.length + forgeCount;
+      toast({ title: 'Quiz generated!', description: `Created ${totalQ} questions${forgeCount > 0 ? ` (${forgeCount} from Forge)` : ''}.` });
       setQuizTitle(''); setSelectedDoc(''); fetchRoomData();
     } catch (error) {
       console.error('Quiz generation error:', error);
