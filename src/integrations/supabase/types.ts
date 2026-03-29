@@ -455,6 +455,47 @@ export type Database = {
           },
         ]
       }
+      recall_cards: {
+        Row: {
+          created_at: string | null
+          ease_factor: number | null
+          id: string
+          interval_days: number | null
+          next_review_at: string | null
+          question_id: string
+          repetitions: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          ease_factor?: number | null
+          id?: string
+          interval_days?: number | null
+          next_review_at?: string | null
+          question_id: string
+          repetitions?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          ease_factor?: number | null
+          id?: string
+          interval_days?: number | null
+          next_review_at?: string | null
+          question_id?: string
+          repetitions?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recall_cards_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       room_members: {
         Row: {
           id: string
@@ -608,6 +649,65 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_questions: {
+        Row: {
+          author_id: string
+          correct_answer: string
+          created_at: string | null
+          difficulty: string
+          id: string
+          option_a: string | null
+          option_b: string | null
+          option_c: string | null
+          option_d: string | null
+          question_text: string
+          question_type: string
+          rejection_reason: string | null
+          room_id: string
+          status: string
+        }
+        Insert: {
+          author_id: string
+          correct_answer: string
+          created_at?: string | null
+          difficulty?: string
+          id?: string
+          option_a?: string | null
+          option_b?: string | null
+          option_c?: string | null
+          option_d?: string | null
+          question_text: string
+          question_type?: string
+          rejection_reason?: string | null
+          room_id: string
+          status?: string
+        }
+        Update: {
+          author_id?: string
+          correct_answer?: string
+          created_at?: string | null
+          difficulty?: string
+          id?: string
+          option_a?: string | null
+          option_b?: string | null
+          option_c?: string | null
+          option_d?: string | null
+          question_text?: string
+          question_type?: string
+          rejection_reason?: string | null
+          room_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_questions_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
             referencedColumns: ["id"]
           },
         ]
