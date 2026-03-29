@@ -2,12 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Upload, FileText, Sparkles, Trophy, Users, Settings, Copy, Check,
-  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye
+  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye, BarChart3, Hammer
 } from 'lucide-react';
 import { CardCascadeIllustration } from '@/components/illustrations/CardCascadeIllustration';
 import { DocumentFunnelIllustration } from '@/components/illustrations/DocumentFunnelIllustration';
 import { ActivityFeed } from '@/components/room/ActivityFeed';
 import { DocumentPreview } from '@/components/room/DocumentPreview';
+import { PulseTab } from '@/components/room/PulseTab';
+import { ForgeTab } from '@/components/room/ForgeTab';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -509,6 +511,18 @@ const RoomPage = () => {
                     <span className="sm:hidden">Rank</span>
                   </TabsTrigger>
                 )}
+                {user?.id === room.owner_id && (
+                  <TabsTrigger value="pulse" className="gap-1.5 sm:gap-2 font-semibold min-h-[44px] text-xs sm:text-sm flex-1 sm:flex-none">
+                    <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Pulse</span>
+                    <span className="sm:hidden">Pulse</span>
+                  </TabsTrigger>
+                )}
+                <TabsTrigger value="forge" className="gap-1.5 sm:gap-2 font-semibold min-h-[44px] text-xs sm:text-sm flex-1 sm:flex-none">
+                  <Hammer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Forge</span>
+                  <span className="sm:hidden">Forge</span>
+                </TabsTrigger>
                 {user?.id === room.owner_id && (
                   <TabsTrigger value="settings" className="gap-1.5 sm:gap-2 font-semibold min-h-[44px] text-xs sm:text-sm flex-1 sm:flex-none">
                     <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
