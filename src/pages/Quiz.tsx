@@ -212,6 +212,31 @@ const QuizPage = () => {
       }
     } catch (err) { console.error('Gamification update error:', err); }
     
+    // Auto-populate recall cards for wrong answers (silent)
+    try {
+      const wrongQuestionIds = questions
+        .filter(q => answers[q.id] !== q.correct_answer)
+        .map(q => q.id);
+      
+      if (wrongQuestionIds.length > 0) {
+        for (const qId of wrongQuestionIds) {
+          await supabase
+            .from('recall_cards')
+            .upsert(
+              {
+                user_id: user.id,
+                question_id: qId,
+                interval_days: 1,
+                ease_factor: 2.5,
+                repetitions: 0,
+                next_review_at: new Date().toISOString(),
+              },
+              { onConflict: 'user_id,question_id' }
+            );
+        }
+      }
+    } catch (err) { console.error('Recall auto-populate error:', err); }
+    
     // Update personal best
     const isNewBest = previousBestScore === null || score > previousBestScore;
     if (isNewBest) setPreviousBestScore(score);
