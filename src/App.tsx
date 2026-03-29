@@ -16,11 +16,12 @@ import Preferences from "./pages/Preferences";
 import Bookmarks from "./pages/Bookmarks";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
+import Recall from "./pages/Recall";
 
 const queryClient = new QueryClient();
 
 // Pages where bottom nav should show
-const MOBILE_NAV_PATHS = ['/dashboard', '/bookmarks', '/profile', '/preferences'];
+const MOBILE_NAV_PATHS = ['/dashboard', '/bookmarks', '/profile', '/preferences', '/recall'];
 
 function AppRoutes() {
   const location = useLocation();
@@ -37,6 +38,7 @@ function AppRoutes() {
         <Route path="/preferences" element={<Preferences />} />
         <Route path="/bookmarks" element={<Bookmarks />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/recall" element={<Recall />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

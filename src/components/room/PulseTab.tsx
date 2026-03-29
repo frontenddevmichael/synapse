@@ -57,7 +57,16 @@ export function PulseTab({ roomId, ownerId, currentUserId }: PulseTabProps) {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [roomId]);
+  }, [roomId, isNonOwner]);
+
+  // Guard: non-owner sees nothing
+  if (isNonOwner) {
+    return (
+      <div className="bento-card py-16 flex flex-col items-center text-center">
+        <p className="text-muted-foreground">Nothing to see here.</p>
+      </div>
+    );
+  }
 
   const loadData = async () => {
     setIsLoading(true);
