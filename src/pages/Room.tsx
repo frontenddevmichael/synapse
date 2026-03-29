@@ -871,6 +871,18 @@ const RoomPage = () => {
               </TabsContent>
             )}
 
+            {/* Pulse Tab (owner only) */}
+            {user?.id === room.owner_id && (
+              <TabsContent value="pulse" className="space-y-6">
+                <PulseTab roomId={room.id} ownerId={room.owner_id} currentUserId={user.id} />
+              </TabsContent>
+            )}
+
+            {/* Forge Tab */}
+            <TabsContent value="forge" className="space-y-6">
+              <ForgeTab roomId={room.id} ownerId={room.owner_id} />
+            </TabsContent>
+
             {/* Settings Tab */}
             {user?.id === room.owner_id && (
               <TabsContent value="settings" className="space-y-6">
