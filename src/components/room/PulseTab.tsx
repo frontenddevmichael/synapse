@@ -39,17 +39,10 @@ export function PulseTab({ roomId, ownerId, currentUserId }: PulseTabProps) {
   const [untouched, setUntouched] = useState<any[]>([]);
   const [curve, setCurve] = useState<any>({ easy: null, medium: null, hard: null });
   const [isLoading, setIsLoading] = useState(true);
-
-  // Guard: non-owner sees nothing
-  if (currentUserId !== ownerId) {
-    return (
-      <div className="bento-card py-16 flex flex-col items-center text-center">
-        <p className="text-muted-foreground">Nothing to see here.</p>
-      </div>
-    );
-  }
+  const isNonOwner = currentUserId !== ownerId;
 
   useEffect(() => {
+    if (isNonOwner) return;
     loadData();
     // Realtime subscription for quiz_attempts
     const channel = supabase
