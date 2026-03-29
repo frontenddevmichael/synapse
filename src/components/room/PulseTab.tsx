@@ -44,7 +44,6 @@ export function PulseTab({ roomId, ownerId, currentUserId }: PulseTabProps) {
   useEffect(() => {
     if (isNonOwner) return;
     loadData();
-    // Realtime subscription for quiz_attempts
     const channel = supabase
       .channel(`pulse-${roomId}`)
       .on(
