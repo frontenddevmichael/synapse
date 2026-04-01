@@ -461,6 +461,65 @@ const RoomPage = () => {
                 {room.code}
                 {copied ? <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-success" /> : <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
               </button>
+              {/* Share button */}
+              <Dialog open={isShareOpen} onOpenChange={setIsShareOpen}>
+                <DialogTrigger asChild>
+                  <button className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors text-xs sm:text-sm text-primary font-medium min-h-[36px]">
+                    <Share2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    Share
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md mx-4 sm:mx-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-lg font-bold">Share this room</DialogTitle>
+                    <DialogDescription>Anyone with the link or QR code can join</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-5 pt-2">
+                    {/* QR Code */}
+                    <div className="flex justify-center">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${window.location.origin}/join/${room.code}`)}`}
+                        alt="Room QR code"
+                        className="w-48 h-48 rounded-xl border border-border p-2 bg-white"
+                      />
+                    </div>
+                    {/* Room code */}
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground mb-1">Room code</p>
+                      <p className="text-2xl font-mono font-bold tracking-[0.3em]">{room.code}</p>
+                    </div>
+                    {/* Copy link */}
+                    <Button
+                      variant="outline"
+                      className="w-full h-11 font-semibold gap-2"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/join/${room.code}`);
+                        setShareLinkCopied(true);
+                        setTimeout(() => setShareLinkCopied(false), 2000);
+                      }}
+                    >
+                      {shareLinkCopied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+                      {shareLinkCopied ? 'Copied!' : 'Copy invite link'}
+                    </Button>
+                    {/* Native share if available */}
+                    {typeof navigator.share === 'function' && (
+                      <Button
+                        className="w-full h-11 font-semibold gap-2"
+                        onClick={() => {
+                          navigator.share({
+                            title: `Join ${room.name} on Synapse`,
+                            text: `Use code ${room.code} or click the link to join:`,
+                            url: `${window.location.origin}/join/${room.code}`,
+                          }).catch(() => {});
+                        }}
+                      >
+                        <Share2 className="h-4 w-4" />
+                        Share via…
+                      </Button>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
               <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
                 <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 {members.length}
