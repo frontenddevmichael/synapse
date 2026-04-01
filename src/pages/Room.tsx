@@ -263,13 +263,22 @@ const RoomPage = () => {
   const handleUploadDocument = async () => {
     if (!user || !roomId || !docName.trim() || !docContent.trim()) return;
     setIsUploading(true);
-    const { error } = await supabase.from('documents').insert({
+    setUploadStage('saving');
+    const { data: inserted, error } = await supabase.from('documents').insert({
       room_id: roomId, uploaded_by: user.id, name: docName.trim(), content: docContent.trim(),
-    });
-    if (error) { toast({ title: 'Upload failed', description: error.message, variant: 'destructive' }); }
-    else {
+    }).select().single();
+    if (error) {
+      setUploadStage('error');
+      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+    } else {
+      setUploadStage('done');
+      // Optimistic: add locally before full refetch
+      if (inserted) {
+        setDocuments(prev => [inserted as Document, ...prev]);
+      }
       toast({ title: 'Document uploaded!', description: 'You can now generate quizzes from this document.' });
       setDocName(''); setDocContent(''); setSelectedFile(null); setUploadMode('paste'); setIsUploadOpen(false);
+      setUploadStage('idle');
       fetchRoomData();
     }
     setIsUploading(false);
