@@ -112,6 +112,8 @@ const RoomPage = () => {
   const [uploadMode, setUploadMode] = useState<'paste' | 'file'>('paste');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isParsing, setIsParsing] = useState(false);
+  const [parseProgress, setParseProgress] = useState<{ current: number; total: number } | null>(null);
+  const [uploadStage, setUploadStage] = useState<'idle' | 'parsing' | 'saving' | 'done' | 'error'>('idle');
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<string>('');
