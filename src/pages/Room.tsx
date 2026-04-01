@@ -102,6 +102,8 @@ const RoomPage = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [shareLinkCopied, setShareLinkCopied] = useState(false);
   
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   
