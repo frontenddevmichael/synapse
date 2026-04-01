@@ -32,7 +32,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { extractTextFromPDF, formatFileSize } from '@/lib/pdfParser';
+import { extractTextFromPDFWithProgress, formatFileSize, isFileTooLarge } from '@/lib/pdfParser';
+import { Progress } from '@/components/ui/progress';
 import { QuestionCountSelector } from '@/components/quiz/QuestionCountSelector';
 import { RoomSettings } from '@/components/room/RoomSettings';
 import { ActiveUsersIndicator } from '@/components/realtime/ActiveUsersIndicator';
