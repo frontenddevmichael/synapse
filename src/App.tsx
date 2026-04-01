@@ -17,6 +17,7 @@ import Bookmarks from "./pages/Bookmarks";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import Recall from "./pages/Recall";
+import JoinRoom from "./pages/JoinRoom";
 
 const queryClient = new QueryClient();
 
