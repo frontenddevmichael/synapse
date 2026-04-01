@@ -528,7 +528,20 @@ const RoomPage = () => {
                               {isParsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
                             </Button>
                           </div>
-                          {docContent && (
+                          {isParsing && parseProgress && (
+                            <div className="mt-3 space-y-1">
+                              <Progress value={(parseProgress.current / parseProgress.total) * 100} className="h-1.5" />
+                              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                                Parsing page {parseProgress.current} of {parseProgress.total}…
+                              </p>
+                            </div>
+                          )}
+                          {isParsing && !parseProgress && (
+                            <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                              <Loader2 className="h-3 w-3 animate-spin" /> Reading file…
+                            </p>
+                          )}
+                          {docContent && !isParsing && (
                             <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">✓ Extracted {docContent.length.toLocaleString()} characters</p>
                           )}
                         </div>
@@ -537,8 +550,9 @@ const RoomPage = () => {
                     </div>
                   )}
                   <Button className="w-full h-11 font-semibold" onClick={handleUploadDocument} disabled={isUploading || isParsing || !docName.trim() || !docContent.trim()}>
+                    {isParsing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Upload Document
+                    {isParsing ? 'Parsing file…' : isUploading ? 'Saving document…' : 'Upload Document'}
                   </Button>
                 </div>
               </DialogContent>
