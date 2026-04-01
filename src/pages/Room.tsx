@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Upload, FileText, Sparkles, Trophy, Users, Settings, Copy, Check,
-  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye, BarChart3, Hammer
+  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye, BarChart3, Hammer, Share2, QrCode
 } from 'lucide-react';
 import { CardCascadeIllustration } from '@/components/illustrations/CardCascadeIllustration';
 import { DocumentFunnelIllustration } from '@/components/illustrations/DocumentFunnelIllustration';
@@ -32,7 +32,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { extractTextFromPDF, formatFileSize } from '@/lib/pdfParser';
+import { extractTextFromPDFWithProgress, formatFileSize, isFileTooLarge } from '@/lib/pdfParser';
+import { Progress } from '@/components/ui/progress';
 import { QuestionCountSelector } from '@/components/quiz/QuestionCountSelector';
 import { RoomSettings } from '@/components/room/RoomSettings';
 import { ActiveUsersIndicator } from '@/components/realtime/ActiveUsersIndicator';
@@ -101,6 +102,8 @@ const RoomPage = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [shareLinkCopied, setShareLinkCopied] = useState(false);
   
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   
@@ -111,6 +114,8 @@ const RoomPage = () => {
   const [uploadMode, setUploadMode] = useState<'paste' | 'file'>('paste');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isParsing, setIsParsing] = useState(false);
+  const [parseProgress, setParseProgress] = useState<{ current: number; total: number } | null>(null);
+  const [uploadStage, setUploadStage] = useState<'idle' | 'parsing' | 'saving' | 'done' | 'error'>('idle');
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<string>('');
@@ -216,21 +221,40 @@ const RoomPage = () => {
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    
+    if (isFileTooLarge(file, 10)) {
+      toast({ title: 'File too large', description: 'Maximum file size is 10 MB.', variant: 'destructive' });
+      return;
+    }
+    
     setSelectedFile(file);
     if (!docName) setDocName(file.name.replace(/\.[^/.]+$/, ''));
 
     setIsParsing(true);
+    setUploadStage('parsing');
+    setParseProgress(null);
     try {
       let content = '';
-      if (file.type === 'application/pdf') { content = await extractTextFromPDF(file); }
-      else { content = await file.text(); }
+      if (file.type === 'application/pdf') {
+        const result = await extractTextFromPDFWithProgress(file, (current, total) => {
+          setParseProgress({ current, total });
+        });
+        content = result.text;
+      } else {
+        content = await file.text();
+      }
+      if (!content.trim()) {
+        throw new Error('No text could be extracted from this file.');
+      }
       setDocContent(content);
+      setUploadStage('idle');
       toast({ title: 'File parsed successfully', description: `Extracted ${content.length.toLocaleString()} characters` });
     } catch (error) {
       console.error('File parsing error:', error);
+      setUploadStage('error');
       toast({ title: 'Failed to parse file', description: error instanceof Error ? error.message : 'Please try a different file', variant: 'destructive' });
       setSelectedFile(null);
-    } finally { setIsParsing(false); }
+    } finally { setIsParsing(false); setParseProgress(null); }
   };
 
   const clearSelectedFile = () => {
@@ -241,13 +265,22 @@ const RoomPage = () => {
   const handleUploadDocument = async () => {
     if (!user || !roomId || !docName.trim() || !docContent.trim()) return;
     setIsUploading(true);
-    const { error } = await supabase.from('documents').insert({
+    setUploadStage('saving');
+    const { data: inserted, error } = await supabase.from('documents').insert({
       room_id: roomId, uploaded_by: user.id, name: docName.trim(), content: docContent.trim(),
-    });
-    if (error) { toast({ title: 'Upload failed', description: error.message, variant: 'destructive' }); }
-    else {
+    }).select().single();
+    if (error) {
+      setUploadStage('error');
+      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+    } else {
+      setUploadStage('done');
+      // Optimistic: add locally before full refetch
+      if (inserted) {
+        setDocuments(prev => [inserted as Document, ...prev]);
+      }
       toast({ title: 'Document uploaded!', description: 'You can now generate quizzes from this document.' });
       setDocName(''); setDocContent(''); setSelectedFile(null); setUploadMode('paste'); setIsUploadOpen(false);
+      setUploadStage('idle');
       fetchRoomData();
     }
     setIsUploading(false);
@@ -428,6 +461,65 @@ const RoomPage = () => {
                 {room.code}
                 {copied ? <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-success" /> : <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
               </button>
+              {/* Share button */}
+              <Dialog open={isShareOpen} onOpenChange={setIsShareOpen}>
+                <DialogTrigger asChild>
+                  <button className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors text-xs sm:text-sm text-primary font-medium min-h-[36px]">
+                    <Share2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    Share
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md mx-4 sm:mx-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-lg font-bold">Share this room</DialogTitle>
+                    <DialogDescription>Anyone with the link or QR code can join</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-5 pt-2">
+                    {/* QR Code */}
+                    <div className="flex justify-center">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${window.location.origin}/join/${room.code}`)}`}
+                        alt="Room QR code"
+                        className="w-48 h-48 rounded-xl border border-border p-2 bg-white"
+                      />
+                    </div>
+                    {/* Room code */}
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground mb-1">Room code</p>
+                      <p className="text-2xl font-mono font-bold tracking-[0.3em]">{room.code}</p>
+                    </div>
+                    {/* Copy link */}
+                    <Button
+                      variant="outline"
+                      className="w-full h-11 font-semibold gap-2"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/join/${room.code}`);
+                        setShareLinkCopied(true);
+                        setTimeout(() => setShareLinkCopied(false), 2000);
+                      }}
+                    >
+                      {shareLinkCopied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+                      {shareLinkCopied ? 'Copied!' : 'Copy invite link'}
+                    </Button>
+                    {/* Native share if available */}
+                    {typeof navigator.share === 'function' && (
+                      <Button
+                        className="w-full h-11 font-semibold gap-2"
+                        onClick={() => {
+                          navigator.share({
+                            title: `Join ${room.name} on Synapse`,
+                            text: `Use code ${room.code} or click the link to join:`,
+                            url: `${window.location.origin}/join/${room.code}`,
+                          }).catch(() => {});
+                        }}
+                      >
+                        <Share2 className="h-4 w-4" />
+                        Share via…
+                      </Button>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
               <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
                 <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 {members.length}
@@ -497,7 +589,20 @@ const RoomPage = () => {
                               {isParsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
                             </Button>
                           </div>
-                          {docContent && (
+                          {isParsing && parseProgress && (
+                            <div className="mt-3 space-y-1">
+                              <Progress value={(parseProgress.current / parseProgress.total) * 100} className="h-1.5" />
+                              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                                Parsing page {parseProgress.current} of {parseProgress.total}…
+                              </p>
+                            </div>
+                          )}
+                          {isParsing && !parseProgress && (
+                            <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                              <Loader2 className="h-3 w-3 animate-spin" /> Reading file…
+                            </p>
+                          )}
+                          {docContent && !isParsing && (
                             <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">✓ Extracted {docContent.length.toLocaleString()} characters</p>
                           )}
                         </div>
@@ -506,8 +611,9 @@ const RoomPage = () => {
                     </div>
                   )}
                   <Button className="w-full h-11 font-semibold" onClick={handleUploadDocument} disabled={isUploading || isParsing || !docName.trim() || !docContent.trim()}>
+                    {isParsing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Upload Document
+                    {isParsing ? 'Parsing file…' : isUploading ? 'Saving document…' : 'Upload Document'}
                   </Button>
                 </div>
               </DialogContent>

@@ -17,6 +17,7 @@ import Bookmarks from "./pages/Bookmarks";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import Recall from "./pages/Recall";
+import JoinRoom from "./pages/JoinRoom";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ function AppRoutes() {
         <Route path="/bookmarks" element={<Bookmarks />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/recall" element={<Recall />} />
+        <Route path="/join/:code" element={<JoinRoom />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

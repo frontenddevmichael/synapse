@@ -47,7 +47,15 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) navigate('/dashboard');
+    if (user) {
+      const pendingJoin = sessionStorage.getItem('joinAfterAuth');
+      if (pendingJoin) {
+        sessionStorage.removeItem('joinAfterAuth');
+        navigate(`/join/${pendingJoin}`);
+      } else {
+        navigate('/dashboard');
+      }
+    }
   }, [user, navigate]);
 
   const signUpForm = useForm<SignUpFormData>({

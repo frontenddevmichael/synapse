@@ -111,22 +111,28 @@ const Dashboard = () => {
     const code = codeOverride || joinCode.trim().toUpperCase();
     if (!user || !code) return;
     setIsSubmitting(true);
-    const { data: room } = await supabase.from('rooms').select('*').eq('code', code).maybeSingle();
-    if (!room) {
-      toast({ title: 'Room not found', description: 'Check the code and try again.', variant: 'destructive' });
-      setIsSubmitting(false);
-      return;
+    try {
+      const { data, error } = await supabase.rpc('join_room_by_code', { _code: code });
+      if (error) throw error;
+      const result = data as any;
+      if (result.status === 'not_found') {
+        toast({ title: 'Room not found', description: 'Check the code and try again.', variant: 'destructive' });
+      } else if (result.status === 'already_member') {
+        toast({ title: 'Already a member', description: result.room_name });
+        navigate(`/room/${result.room_id}`);
+        setIsJoinOpen(false);
+      } else if (result.status === 'joined') {
+        toast({ title: 'Joined room!', description: result.room_name });
+        setIsJoinOpen(false);
+        fetchRooms();
+      } else if (result.status === 'error') {
+        toast({ title: 'Error', description: result.message, variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Failed to join', description: err.message, variant: 'destructive' });
     }
-    const { data: existingMember } = await supabase.from('room_members').select('id').eq('room_id', room.id).eq('user_id', user.id).maybeSingle();
-    if (existingMember) {
-      toast({ title: 'Already a member' });
-      setIsSubmitting(false); setIsJoinOpen(false);
-      return;
-    }
-    await supabase.from('room_members').insert({ room_id: room.id, user_id: user.id, role: 'member' });
-    toast({ title: 'Joined room', description: room.name });
-    setJoinCode(''); setIsJoinOpen(false); setIsSubmitting(false);
-    fetchRooms();
+    setJoinCode('');
+    setIsSubmitting(false);
   };
 
   const handleSignOut = async () => { await signOut(); navigate('/auth'); };
