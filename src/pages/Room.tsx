@@ -219,21 +219,40 @@ const RoomPage = () => {
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    
+    if (isFileTooLarge(file, 10)) {
+      toast({ title: 'File too large', description: 'Maximum file size is 10 MB.', variant: 'destructive' });
+      return;
+    }
+    
     setSelectedFile(file);
     if (!docName) setDocName(file.name.replace(/\.[^/.]+$/, ''));
 
     setIsParsing(true);
+    setUploadStage('parsing');
+    setParseProgress(null);
     try {
       let content = '';
-      if (file.type === 'application/pdf') { content = await extractTextFromPDF(file); }
-      else { content = await file.text(); }
+      if (file.type === 'application/pdf') {
+        const result = await extractTextFromPDFWithProgress(file, (current, total) => {
+          setParseProgress({ current, total });
+        });
+        content = result.text;
+      } else {
+        content = await file.text();
+      }
+      if (!content.trim()) {
+        throw new Error('No text could be extracted from this file.');
+      }
       setDocContent(content);
+      setUploadStage('idle');
       toast({ title: 'File parsed successfully', description: `Extracted ${content.length.toLocaleString()} characters` });
     } catch (error) {
       console.error('File parsing error:', error);
+      setUploadStage('error');
       toast({ title: 'Failed to parse file', description: error instanceof Error ? error.message : 'Please try a different file', variant: 'destructive' });
       setSelectedFile(null);
-    } finally { setIsParsing(false); }
+    } finally { setIsParsing(false); setParseProgress(null); }
   };
 
   const clearSelectedFile = () => {
