@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Upload, FileText, Sparkles, Trophy, Users, Settings, Copy, Check,
-  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye, BarChart3, Hammer
+  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye, BarChart3, Hammer, Share2, QrCode
 } from 'lucide-react';
 import { CardCascadeIllustration } from '@/components/illustrations/CardCascadeIllustration';
 import { DocumentFunnelIllustration } from '@/components/illustrations/DocumentFunnelIllustration';
