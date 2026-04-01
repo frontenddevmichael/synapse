@@ -40,6 +40,7 @@ function AppRoutes() {
         <Route path="/bookmarks" element={<Bookmarks />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/recall" element={<Recall />} />
+        <Route path="/join/:code" element={<JoinRoom />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
