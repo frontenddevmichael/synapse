@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import Recall from "./pages/Recall";
 import JoinRoom from "./pages/JoinRoom";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
