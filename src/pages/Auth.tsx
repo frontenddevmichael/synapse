@@ -42,7 +42,9 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { user, signUp, signIn } = useAuth();
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const { user, signUp, signIn, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -105,6 +107,37 @@ const Auth = () => {
         : error.message;
       toast({ title: 'Sign in failed', description: message, variant: 'destructive' });
     }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) return;
+    setIsLoading(true);
+    const { error } = await resetPassword(forgotEmail.trim());
+    setIsLoading(false);
+    if (error) {
+      toast({ title: 'Failed to send reset email', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Check your email', description: 'We sent a password reset link.' });
+      setForgotMode(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/dashboard` },
+    });
+    if (error) {
+      toast({ title: 'Google sign-in failed', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const toggleMode = (signUp: boolean) => {
+    setIsSignUp(signUp);
+    setForgotMode(false);
+    signUpForm.reset();
+    signInForm.reset();
   };
 
   return (
