@@ -42,7 +42,9 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { user, signUp, signIn } = useAuth();
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const { user, signUp, signIn, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
