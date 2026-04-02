@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Trophy, Zap, Target } from 'lucide-react';
+import { Save, Loader2, Trophy, Zap, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Logo } from '@/components/Logo';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -60,13 +59,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background dot-grid pb-14 sm:pb-0">
-      <header className="flex items-center justify-between p-4 sm:p-6 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-40">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="min-h-[44px] min-w-[44px]"><ArrowLeft className="h-4 w-4" /></Button>
-          <Logo />
-        </div>
-        <ThemeToggle />
-      </header>
+      <PageHeader />
 
       <main className="flex-1 container max-w-4xl py-6 sm:py-8 px-4 sm:px-8 space-y-6 sm:space-y-8">
         <motion.div variants={staggerFast} initial="hidden" animate="visible">
@@ -108,6 +101,10 @@ const Profile = () => {
                 <CardDescription className="text-xs sm:text-sm">Update your display name and username</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 p-4 sm:p-6 pt-0 sm:pt-0">
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input value={user?.email || ''} disabled className="h-11 bg-muted/30 text-muted-foreground" />
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Username</Label>

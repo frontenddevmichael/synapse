@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
+import { DesktopNav } from '@/components/layout/DesktopNav';
 
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
@@ -167,7 +168,10 @@ const Dashboard = () => {
 
       {/* Header — simplified on mobile (nav icons moved to bottom nav) */}
       <header className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-40">
-        <Logo />
+        <div className="flex items-center">
+          <Logo />
+          <DesktopNav />
+        </div>
         <div className="flex items-center gap-2 sm:gap-3">
           {stats && (
             <div className="hidden sm:flex items-center gap-3 mr-2">
@@ -176,27 +180,6 @@ const Dashboard = () => {
             </div>
           )}
           <ThemeToggle />
-          {/* Desktop-only nav icons */}
-          <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
-            <User className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/bookmarks')} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground" title="Study Deck">
-            <Bookmark className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/recall')} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground relative" title="Recall">
-            <Brain className="h-4 w-4" />
-            {recallDueCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
-                {recallDueCount > 99 ? '99+' : recallDueCount}
-              </span>
-            )}
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/preferences')} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
-            <Settings className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleSignOut} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
-            <LogOut className="h-4 w-4" />
-          </Button>
         </div>
       </header>
 
