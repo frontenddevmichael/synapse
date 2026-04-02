@@ -31,6 +31,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (event === 'SIGNED_OUT') {
+          // Clean up state on sign-out (handles stale token loops)
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('Auth token refreshed');
+        }
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -41,6 +51,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
+    }).catch(() => {
+      // If getSession fails (e.g. stale refresh token), sign out cleanly
+      supabase.auth.signOut();
       setLoading(false);
     });
 
