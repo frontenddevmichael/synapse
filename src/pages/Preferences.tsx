@@ -73,13 +73,7 @@ const Preferences = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background dot-grid pb-14 sm:pb-0">
-      <header className="flex items-center justify-between p-4 sm:p-6 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-40">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="min-h-[44px] min-w-[44px]"><ArrowLeft className="h-4 w-4" /></Button>
-          <Logo />
-        </div>
-        <ThemeToggle />
-      </header>
+      <PageHeader />
 
       <main className="flex-1 container max-w-2xl py-6 sm:py-8 px-4 sm:px-8">
         <motion.div variants={stagger} initial="hidden" animate="visible">

@@ -101,6 +101,10 @@ const Profile = () => {
                 <CardDescription className="text-xs sm:text-sm">Update your display name and username</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 p-4 sm:p-6 pt-0 sm:pt-0">
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input value={user?.email || ''} disabled className="h-11 bg-muted/30 text-muted-foreground" />
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Username</Label>
