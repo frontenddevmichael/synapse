@@ -1,63 +1,46 @@
 
 
-## Audit & Enhancement Plan
+## Diagnosis
 
-### Audit Findings
+### 1. Confirmation email redirects to broken page
+The signup code sets `emailRedirectTo: window.location.origin + "/"`. In the preview environment, `window.location.origin` is `https://id-preview--8afeb885-c383-49cd-a25f-97bd4f6e6a7a.lovable.app`. However, Supabase only allows redirects to URLs that match the **Site URL** or are listed in **Redirect URLs** in the Supabase dashboard (Authentication > URL Configuration).
 
-**1. Document Upload** -- Looks solid now. Progress feedback with `extractTextFromPDFWithProgress`, stage indicators (`parsing`/`saving`/`error`/`done`), optimistic insert, and file size guards are all in place. No bugs found.
+If the Supabase dashboard Site URL is set to the published URL (`https://synapse-quiz-wiz.lovable.app`) but you're testing in preview, the confirmation link will redirect to the published URL -- which may not match where you started, causing a "broken page" experience.
 
-**2. Join-by-Code** -- RPC `join_room_by_code` is correctly implemented as `SECURITY DEFINER`. Dashboard calls it properly with auto-submit on 6 chars. JoinRoom page preserves destination through auth via `sessionStorage`. No bugs found.
+**Fix:** This is a Supabase dashboard configuration issue, not a code bug. You need to add both URLs to the allowed redirect list in Supabase:
+- Go to https://supabase.com/dashboard/project/yhdwpzopbhdfpahpsouo/auth/url-configuration
+- Set **Site URL** to your published URL: `https://synapse-quiz-wiz.lovable.app`
+- Under **Redirect URLs**, add these patterns:
+  - `https://id-preview--8afeb885-c383-49cd-a25f-97bd4f6e6a7a.lovable.app/**`
+  - `https://synapse-quiz-wiz.lovable.app/**`
+  - `http://localhost:3000/**` (for local dev)
 
-**3. Share/QR** -- QR code via external API, copy link, native share all wired up correctly. No bugs found.
+### 2. Google sign-in button not working
+The code calls `supabase.auth.signInWithOAuth({ provider: 'google' })` but Google OAuth must be configured in your Supabase dashboard first. Without it, the button will silently fail or show an error.
 
-**4. Auth** -- Missing: password reset flow, stale refresh token handling. The auth logs show `Invalid Refresh Token: Refresh Token Not Found` errors that leave users in a broken state. No "Forgot password" option exists.
+**Fix:** Configure Google OAuth in Supabase:
+1. Go to https://console.cloud.google.com and create OAuth credentials (Web application type)
+2. Set **Authorized JavaScript origins** to your site URLs (both preview and published)
+3. Set **Authorized redirect URI** to `https://yhdwpzopbhdfpahpsouo.supabase.co/auth/v1/callback`
+4. Copy the Client ID and Client Secret
+5. Go to https://supabase.com/dashboard/project/yhdwpzopbhdfpahpsouo/auth/providers
+6. Enable Google provider and paste the credentials
 
-**5. Navigation** -- No consistent back-navigation pattern. Pages like Bookmarks, Preferences, Recall, Profile all have their own back buttons but there's no breadcrumb or unified nav on desktop. The landing page has no way to reach dashboard for logged-in users besides redirect.
+### 3. Room and QR code invitation
+The code for join-by-code and QR sharing looks correct based on the previous audit. The `/join/:code` route exists, the `join_room_by_code` RPC is a `SECURITY DEFINER` function, and `sessionStorage` preserves the join destination through auth. **Testing on the published URL is recommended** to confirm it works end-to-end, since preview URL auth redirects may interfere.
+
+### 4. Code improvement (minor)
+Update the signup `emailRedirectTo` to point to `/dashboard` instead of `/` for a smoother post-confirmation experience.
 
 ---
 
-### Implementation Plan
+## Summary of actions
 
-#### 1. Password Reset Flow
-- Add "Forgot password?" link to Auth.tsx sign-in form
-- Create `src/pages/ResetPassword.tsx` -- checks for `type=recovery` in URL hash, shows new password form, calls `supabase.auth.updateUser({ password })`
-- Update `AuthContext.tsx` to expose `resetPassword(email)` which calls `supabase.auth.resetPasswordForEmail(email, { redirectTo: origin + '/reset-password' })`
-- Add `/reset-password` route to App.tsx
+**Dashboard configuration (you do manually):**
+- Add redirect URLs in Supabase Auth URL Configuration
+- Configure Google OAuth provider in Supabase dashboard
 
-#### 2. Auth Hardening
-- In `AuthContext.tsx`, handle `TOKEN_REFRESHED` and `SIGNED_OUT` events from `onAuthStateChange`
-- On `SIGNED_OUT` event with stale token, clear local state cleanly to prevent broken session loops
-- Add error boundary around auth state changes
-
-#### 3. Google OAuth (optional enhancement)
-- Add "Sign in with Google" button to Auth.tsx
-- Call `supabase.auth.signInWithOAuth({ provider: 'google' })` -- requires user to configure Google provider in Supabase dashboard
-- Will provide instructions for dashboard setup
-
-#### 4. Better Navigation
-- Create a shared `PageHeader` component used across all inner pages (Profile, Bookmarks, Preferences, Recall) with consistent back button, page title, and optional actions
-- Add a desktop sidebar/top nav bar for authenticated pages showing: Rooms, Recall, Deck, Profile, Settings, Sign Out
-- Ensure the mobile bottom nav and desktop nav stay in sync
-
-#### 5. Minor Fixes
-- JoinRoom: handle edge case where `code` param is empty
-- Auth page: clear form errors when toggling between sign-in/sign-up
-- Profile: add email display (read-only) so users know which account they're on
-
-### Files to Create
-- `src/pages/ResetPassword.tsx`
-
-### Files to Modify
-- `src/contexts/AuthContext.tsx` -- add `resetPassword`, handle stale tokens
-- `src/pages/Auth.tsx` -- forgot password link, Google OAuth button, form reset on toggle
-- `src/App.tsx` -- add `/reset-password` route
-- `src/pages/Profile.tsx` -- show email
-- `src/pages/Dashboard.tsx` -- refine desktop nav
-- `src/components/MobileNav.tsx` -- minor consistency tweaks
-
-### Validation
-- Test forgot password: request reset, receive email, click link, set new password, sign in
-- Test sign in/up toggle clears errors
-- Test stale session recovery (clear cookies, reload)
-- Test navigation consistency across all pages on both mobile and desktop
+**Code change (I will implement):**
+- Update `emailRedirectTo` in `AuthContext.tsx` to redirect to `/dashboard` after email confirmation
+- Test the published URL for room/QR invitation flows
 
