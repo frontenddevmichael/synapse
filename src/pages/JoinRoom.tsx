@@ -18,15 +18,11 @@ const JoinRoom = () => {
     if (authLoading) return;
     if (!user) {
       // Preserve join destination through auth
-      if (code) sessionStorage.setItem('joinAfterAuth', code);
+      sessionStorage.setItem('joinAfterAuth', code || '');
       navigate('/auth');
       return;
     }
-    if (!code) {
-      navigate('/dashboard');
-      return;
-    }
-    joinRoom(code);
+    if (code) joinRoom(code);
   }, [user, authLoading, code]);
 
   const joinRoom = async (roomCode: string) => {
