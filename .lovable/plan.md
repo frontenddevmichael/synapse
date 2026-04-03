@@ -1,46 +1,94 @@
 
 
-## Diagnosis
+## Current Feature Inventory & Production Readiness Audit
 
-### 1. Confirmation email redirects to broken page
-The signup code sets `emailRedirectTo: window.location.origin + "/"`. In the preview environment, `window.location.origin` is `https://id-preview--8afeb885-c383-49cd-a25f-97bd4f6e6a7a.lovable.app`. However, Supabase only allows redirects to URLs that match the **Site URL** or are listed in **Redirect URLs** in the Supabase dashboard (Authentication > URL Configuration).
-
-If the Supabase dashboard Site URL is set to the published URL (`https://synapse-quiz-wiz.lovable.app`) but you're testing in preview, the confirmation link will redirect to the published URL -- which may not match where you started, causing a "broken page" experience.
-
-**Fix:** This is a Supabase dashboard configuration issue, not a code bug. You need to add both URLs to the allowed redirect list in Supabase:
-- Go to https://supabase.com/dashboard/project/yhdwpzopbhdfpahpsouo/auth/url-configuration
-- Set **Site URL** to your published URL: `https://synapse-quiz-wiz.lovable.app`
-- Under **Redirect URLs**, add these patterns:
-  - `https://id-preview--8afeb885-c383-49cd-a25f-97bd4f6e6a7a.lovable.app/**`
-  - `https://synapse-quiz-wiz.lovable.app/**`
-  - `http://localhost:3000/**` (for local dev)
-
-### 2. Google sign-in button not working
-The code calls `supabase.auth.signInWithOAuth({ provider: 'google' })` but Google OAuth must be configured in your Supabase dashboard first. Without it, the button will silently fail or show an error.
-
-**Fix:** Configure Google OAuth in Supabase:
-1. Go to https://console.cloud.google.com and create OAuth credentials (Web application type)
-2. Set **Authorized JavaScript origins** to your site URLs (both preview and published)
-3. Set **Authorized redirect URI** to `https://yhdwpzopbhdfpahpsouo.supabase.co/auth/v1/callback`
-4. Copy the Client ID and Client Secret
-5. Go to https://supabase.com/dashboard/project/yhdwpzopbhdfpahpsouo/auth/providers
-6. Enable Google provider and paste the credentials
-
-### 3. Room and QR code invitation
-The code for join-by-code and QR sharing looks correct based on the previous audit. The `/join/:code` route exists, the `join_room_by_code` RPC is a `SECURITY DEFINER` function, and `sessionStorage` preserves the join destination through auth. **Testing on the published URL is recommended** to confirm it works end-to-end, since preview URL auth redirects may interfere.
-
-### 4. Code improvement (minor)
-Update the signup `emailRedirectTo` to point to `/dashboard` instead of `/` for a smoother post-confirmation experience.
+### What You Have Now
+- **Auth**: Email/password signup, Google OAuth (needs dashboard config), password reset flow, session hardening
+- **Rooms**: Create/join with 6-char codes, Study/Challenge/Exam modes, QR sharing, invite links
+- **Documents**: PDF/text upload with progress, content extraction
+- **Quiz Engine**: AI-generated quizzes from documents, multiple choice + true/false, timed modes, keyboard navigation, retry mistakes, bookmark questions
+- **Gamification**: XP/levels, streaks, achievements, confetti, daily activity tracking
+- **Spaced Repetition (Recall)**: Auto-populated from wrong answers, SM-2 algorithm
+- **Bookmarks**: Save and review questions
+- **Analytics**: Progress charts, stats cards
+- **PWA**: Service worker, install prompt
+- **Realtime**: Active users indicator, activity feed
+- **User Forge**: Community-submitted questions
 
 ---
 
-## Summary of actions
+### Improvements to Existing Features
 
-**Dashboard configuration (you do manually):**
-- Add redirect URLs in Supabase Auth URL Configuration
-- Configure Google OAuth provider in Supabase dashboard
+**1. Loading & Error States (High Priority)**
+Every page does `if (!user) navigate('/auth')` inline -- no route guards. A single `ProtectedRoute` wrapper would prevent flash-of-content and centralize auth redirects.
 
-**Code change (I will implement):**
-- Update `emailRedirectTo` in `AuthContext.tsx` to redirect to `/dashboard` after email confirmation
-- Test the published URL for room/QR invitation flows
+**2. Room Page is 1,050 lines (High Priority)**
+`Room.tsx` handles upload, quiz generation, leaderboard, members, documents, settings, and sharing all in one file. Splitting into composable components would improve maintainability.
+
+**3. Quiz -- No "Review All Answers" Screen**
+After completing a quiz, users see their score but can't scroll through all questions with explanations side-by-side. A post-quiz review screen showing each question, selected answer, correct answer, and explanation is standard for education apps.
+
+**4. Profile -- No Avatar Upload**
+The `profiles` table has an `avatar_url` column but there's no UI to upload or change an avatar. No Supabase storage bucket exists yet.
+
+**5. Search & Filtering**
+No way to search rooms, quizzes, documents, or bookmarks. As users accumulate content, this becomes critical.
+
+**6. Room Owner Controls**
+Room owners can't remove members, transfer ownership, or archive/delete rooms from the UI.
+
+**7. Recall Page -- No Stats**
+The spaced repetition page shows cards but no metrics (cards mastered, retention rate, review streak). Users can't see their learning progress over time.
+
+---
+
+### Features to Add for Production Grade
+
+**8. Email Verification Gate**
+Currently, unverified users can access everything. Add a check: if `user.email_confirmed_at` is null, show a "verify your email" banner and restrict quiz creation.
+
+**9. Account Deletion**
+GDPR/privacy compliance requires users to be able to delete their account and data. This needs a Supabase edge function with service role access to cascade-delete user data.
+
+**10. Rate Limiting on Quiz Generation**
+The AI edge function has no per-user rate limiting. A user could spam quiz generation and exhaust credits. Add a cooldown or daily quota.
+
+**11. Notifications System**
+No in-app notifications when: someone joins your room, a new quiz is created in a room you belong to, or your recall cards are due. A `notifications` table + bell icon would drive engagement.
+
+**12. Public/Discoverable Rooms**
+Rooms have a `broadcast` flag in the schema but there's no "Explore" or "Discover" page where users can browse public rooms and join.
+
+**13. Export & Print**
+Users can't export quiz results, bookmarks, or recall cards as PDF/CSV for offline study.
+
+**14. Accessibility (a11y)**
+No skip-to-content links, some interactive elements lack proper ARIA labels, quiz answer selection doesn't announce correctness to screen readers.
+
+**15. SEO & Meta Tags**
+The landing page has no dynamic `<meta>` tags for social sharing (OG image, description). Adding `react-helmet-async` would improve link previews when sharing.
+
+---
+
+### Recommended Priority Order
+
+| Priority | Item | Effort |
+|----------|------|--------|
+| 1 | ProtectedRoute wrapper (auth guard) | Small |
+| 2 | Post-quiz review screen | Medium |
+| 3 | Room page refactor (split components) | Medium |
+| 4 | Search/filter for rooms & bookmarks | Medium |
+| 5 | Avatar upload (storage bucket + UI) | Medium |
+| 6 | Room owner controls (kick/transfer) | Medium |
+| 7 | Email verification gate | Small |
+| 8 | Account deletion | Medium |
+| 9 | Discover public rooms page | Medium |
+| 10 | Notifications system | Large |
+| 11 | Quiz generation rate limiting | Small |
+| 12 | Export/print results | Medium |
+| 13 | Recall stats dashboard | Medium |
+| 14 | SEO meta tags | Small |
+| 15 | Accessibility audit | Medium |
+
+Let me know which items you'd like to tackle first and I'll create a detailed implementation plan.
 
