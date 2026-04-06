@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Upload, FileText, Sparkles, Trophy, Users, Settings, Copy, Check,
-  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye, BarChart3, Hammer, Share2, QrCode
+  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye, BarChart3, Hammer, Share2, QrCode, LogOut
 } from 'lucide-react';
 import { CardCascadeIllustration } from '@/components/illustrations/CardCascadeIllustration';
 import { DocumentFunnelIllustration } from '@/components/illustrations/DocumentFunnelIllustration';
@@ -378,6 +378,17 @@ const RoomPage = () => {
     else { toast({ title: 'Quiz deleted' }); fetchRoomData(); }
   };
 
+  const handleLeaveRoom = async () => {
+    if (!user || !roomId) return;
+    const { error } = await supabase.from('room_members').delete().eq('room_id', roomId).eq('user_id', user.id);
+    if (error) {
+      toast({ title: 'Failed to leave room', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Left room' });
+      navigate('/dashboard');
+    }
+  };
+
   const getModeIcon = (mode: string) => {
     switch (mode) {
       case 'study': return <BookOpen className="h-4 w-4" />;
@@ -532,12 +543,34 @@ const RoomPage = () => {
                 {quizzes.length} quiz{quizzes.length !== 1 ? 'zes' : ''}
               </span>
             </div>
-            {/* Upload button — full width on mobile */}
+            <div className="flex items-center gap-2 mt-3 sm:mt-0 sm:absolute sm:right-8 sm:top-8">
+              {/* Leave Room — only for non-owners */}
+              {user?.id !== room.owner_id && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1.5 text-muted-foreground hover:text-destructive hover:border-destructive/50">
+                      <LogOut className="h-3.5 w-3.5" />
+                      Leave
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Leave this room?</AlertDialogTitle>
+                      <AlertDialogDescription>You'll need to rejoin with the room code to access it again.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleLeaveRoom}>Leave room</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            {/* Upload button */}
             <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2 font-semibold w-full sm:w-auto mt-3 sm:mt-0 sm:absolute sm:right-8 sm:top-8">
+                <Button className="gap-2 font-semibold">
                   <Upload className="h-4 w-4" />
-                  Upload Document
+                  Upload
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-lg mx-4 sm:mx-auto">
@@ -618,6 +651,7 @@ const RoomPage = () => {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </motion.div>
           {/* Activity Feed */}
           <div className="container max-w-6xl px-3 sm:px-8 pb-4">
