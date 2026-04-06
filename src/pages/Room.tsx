@@ -568,9 +568,9 @@ const RoomPage = () => {
             {/* Upload button */}
             <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2 font-semibold w-full sm:w-auto mt-3 sm:mt-0 sm:absolute sm:right-8 sm:top-8">
+                <Button className="gap-2 font-semibold">
                   <Upload className="h-4 w-4" />
-                  Upload Document
+                  Upload
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-lg mx-4 sm:mx-auto">
