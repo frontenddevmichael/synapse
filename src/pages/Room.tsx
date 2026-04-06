@@ -651,6 +651,7 @@ const RoomPage = () => {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </motion.div>
           {/* Activity Feed */}
           <div className="container max-w-6xl px-3 sm:px-8 pb-4">
