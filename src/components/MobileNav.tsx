@@ -31,10 +31,15 @@ export function MobileNav() {
       });
   }, [user]);
 
+  // Hide on quiz pages
+  const isQuizPage = location.pathname.startsWith('/quiz/');
+  
   const isActive = (path: string) => {
     if (path.includes('?')) return location.pathname + location.search === path;
     return location.pathname === path;
   };
+
+  if (isQuizPage) return null;
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-50 sm:hidden bg-background/90 backdrop-blur-md border-t border-border/40 pb-safe">

@@ -124,7 +124,7 @@ const Dashboard = () => {
       } else if (result.status === 'joined') {
         toast({ title: 'Joined room!', description: result.room_name });
         setIsJoinOpen(false);
-        fetchRooms();
+        navigate(`/room/${result.room_id}`);
       } else if (result.status === 'error') {
         toast({ title: 'Error', description: result.message, variant: 'destructive' });
       }
@@ -392,10 +392,15 @@ const Dashboard = () => {
                           }`} />
 
                           <div className="flex items-center justify-between gap-3 sm:items-start sm:flex-col sm:gap-0 pl-2 sm:pl-0 sm:mt-2">
-                            <div className="min-w-0 flex-1 sm:w-full">
-                              <h3 className="font-bold text-sm sm:text-lg truncate group-hover:text-primary transition-colors">
-                                {room.name}
-                              </h3>
+                          <div className="min-w-0 flex-1 sm:w-full">
+                              <div className="flex items-center gap-1.5">
+                                <h3 className="font-bold text-sm sm:text-lg truncate group-hover:text-primary transition-colors">
+                                  {room.name}
+                                </h3>
+                                {room.owner_id === user?.id && (
+                                  <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 shrink-0">Owner</Badge>
+                                )}
+                              </div>
                               <p className="font-mono text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">{room.code}</p>
                             </div>
                             <Badge variant="outline" className={`${getModeClass(room.mode)} text-[10px] sm:text-xs font-semibold gap-1 shrink-0 sm:mt-2`}>
