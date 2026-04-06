@@ -397,6 +397,7 @@ const Auth = () => {
             )}
           </AnimatePresence>
         </motion.div>
+      </main>
       {/* Forgot Password Modal */}
       <AnimatePresence>
         {showForgotPassword && (
