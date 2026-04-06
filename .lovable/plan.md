@@ -1,53 +1,84 @@
 
 
-## Plan: Fix Account Creation + Proceed with Remaining Plan Items
+# Audit & Improvement Plan for Synapse
 
-### Issue 1: Account Creation (Supabase Confirmation Email)
+## Findings
 
-**Root cause:** The Supabase project has no custom SMTP configured, so it relies on Supabase's built-in email service. Looking at the database, some users DO have confirmed emails (e.g., `ogundeleademilade@gmail.com` confirmed successfully), while others don't (e.g., `sebube2008@gmail.com`). This means Supabase's default email sending works intermittently — it's subject to rate limits (Supabase free tier: 2 emails/hour for auth).
+### 1. Room Joining
+- The `join_room_by_code` RPC is correctly implemented as a `SECURITY DEFINER` function, bypassing RLS.
+- Dashboard join flow uses auto-submit on 6 characters and the RPC — working correctly.
+- `/join/:code` route exists with auth persistence via sessionStorage — working correctly.
+- **Issue found:** After joining via Dashboard dialog, the user is NOT navigated to the room on `status === 'joined'`. They stay on the dashboard and have to find/click the room manually.
 
-**Fix approach — two options combined:**
+### 2. Independent Quiz Answering
+- `Quiz.tsx` line 166: `user_id: user.id` — correct, each user gets their own attempt.
+- `useGamification.ts`: all XP, streaks, achievements scoped to `user.id` — correct.
+- Leaderboard in `Room.tsx` aggregates by individual `user_id` — correct.
+- **No issues found.** Each member's quiz data is fully independent.
 
-1. **Immediate fix**: Go to the Supabase dashboard (Authentication > Providers > Email) and either:
-   - Disable "Confirm email" toggle so users can sign in immediately without verification, OR
-   - Configure a custom SMTP provider for reliable delivery
+### 3. Google Sign-In
+- **Not implemented.** No `signInWithOAuth` or Google references exist anywhere in the codebase. Needs to be added.
 
-2. **Code-side improvement**: Update the Auth page to handle the unconfirmed state better — show a clear "check your email" screen with a resend button, and handle the "Email not confirmed" error gracefully on sign-in.
+### 4. Navigation Gaps
+- Room page and Quiz page have no bottom nav and no way to get to Profile/Bookmarks/Recall without going back to Dashboard first.
+- No desktop sidebar — just icon buttons in the Dashboard header. Other pages (Bookmarks, Profile, Preferences, Recall) have no desktop nav at all beyond a back button.
+- `MobileNav` only shows on 5 specific paths — not on Room or Quiz pages.
+- **No "Forgot Password" flow** exists despite being a standard auth feature.
 
-**What I will implement:**
-- Add a "Resend confirmation" option on the Auth page when signup succeeds
-- Improve error messaging for "Email not confirmed" on sign-in attempts
-- Add a post-signup state that clearly tells the user to check their email (including spam folder)
-- The user should go to their Supabase dashboard to either disable email confirmation or configure SMTP for reliable delivery
+### 5. Other Improvements Identified
+- No loading/empty states for the Analytics tab.
+- Room page doesn't show which rooms the user owns vs. joined.
+- No way to leave a room as a member.
+- No confirmation before deleting a quiz or document (documents have AlertDialog but quizzes do not).
 
-### Issue 2: Room Joining Independence (Already Working)
+---
 
-The code review confirms this is already correctly implemented:
-- Quiz attempts use `user_id: user.id` (the authenticated user, not the room owner)
-- XP, streaks, and achievements in `useGamification.ts` all query by `user.id`
-- The `join_room_by_code` RPC is deployed and correctly inserts members with `role: 'member'`
-- The leaderboard groups by individual user
+## Implementation Plan
 
-No code changes needed here — the independence is already in place. The issue was that testing with multiple accounts was blocked by the signup problem (Issue 1).
+### Step 1: Fix Join Room Navigation
+**File:** `src/pages/Dashboard.tsx`
+- After `status === 'joined'`, navigate to `room/${result.room_id}` (currently missing).
 
-### Remaining Plan Items
+### Step 2: Add Google OAuth Sign-In
+**Files:** `src/pages/Auth.tsx`, `src/contexts/AuthContext.tsx`
+- Add `signInWithGoogle` method to AuthContext using `supabase.auth.signInWithOAuth({ provider: 'google' })`.
+- Add a "Continue with Google" button on the Auth page with a divider ("or").
+- Note: The user must configure Google OAuth credentials in their Supabase dashboard (Authentication > Providers > Google) for this to work.
 
-3. **Room sharing with QR code** — already implemented in Room.tsx (Share dialog with QR + copy link)
-4. **`/join/:code` route** — already implemented in JoinRoom.tsx with auth persistence via sessionStorage
+### Step 3: Add Forgot Password Flow
+**Files:** `src/pages/Auth.tsx` (add link), new `src/pages/ResetPassword.tsx`, `src/App.tsx` (add route)
+- Add "Forgot password?" link on the sign-in form.
+- Implement password reset request using `supabase.auth.resetPasswordForEmail()`.
+- Create `/reset-password` page that handles the `type=recovery` callback and calls `supabase.auth.updateUser({ password })`.
 
-### Implementation Steps
+### Step 4: Improve Sitewide Navigation
+**Files:** `src/components/MobileNav.tsx`, `src/App.tsx`, `src/pages/Room.tsx`, `src/pages/Quiz.tsx`
+- Extend `MOBILE_NAV_PATHS` to include `/room/` prefix paths so bottom nav appears in rooms (but not during active quizzes).
+- Add a consistent desktop sidebar/nav component that appears on all authenticated pages (Dashboard, Room, Bookmarks, Profile, Preferences, Recall).
 
-| Step | File | Change |
-|------|------|--------|
-| 1 | `src/pages/Auth.tsx` | Add post-signup confirmation screen with "Resend email" button and spam folder hint |
-| 2 | `src/pages/Auth.tsx` | Add resend confirmation flow for users who try to sign in but haven't confirmed |
-| 3 | `src/contexts/AuthContext.tsx` | Add `resendConfirmation` method |
+### Step 5: Add "Leave Room" for Members
+**File:** `src/pages/Room.tsx`
+- Add a "Leave room" button (visible only to non-owner members) that deletes the user's `room_members` row and navigates back to Dashboard.
 
-### What YOU Need to Do (Supabase Dashboard)
+### Step 6: Minor UX Fixes
+- Add delete confirmation for quizzes (AlertDialog like documents already have).
+- Show owner badge on room cards in the Dashboard.
+- Add a "Forgot password?" link on the sign-in form.
 
-Go to your Supabase dashboard > Authentication > Providers > Email and either:
-- **Option A**: Turn OFF "Confirm email" — users can sign in immediately (simpler, good for testing)
-- **Option B**: Keep it ON but configure a custom SMTP (Gmail, SendGrid, etc.) for reliable delivery
+---
 
-The code changes I'll make will work with either option — they improve the UX around email confirmation regardless.
+## Files Affected
+
+| File | Changes |
+|------|---------|
+| `src/pages/Auth.tsx` | Google OAuth button, forgot password link, reset email form |
+| `src/contexts/AuthContext.tsx` | `signInWithGoogle`, `resetPassword` methods |
+| `src/pages/ResetPassword.tsx` | New — password reset page |
+| `src/pages/Dashboard.tsx` | Navigate to room after joining, owner badge on cards |
+| `src/pages/Room.tsx` | Leave room button for members, quiz delete confirmation |
+| `src/components/MobileNav.tsx` | Show on room pages |
+| `src/App.tsx` | Add `/reset-password` route, update mobile nav paths |
+
+## Prerequisites (User Action Required)
+- **Google OAuth:** Configure Google OAuth in Supabase dashboard (Authentication > Providers > Google) with your Google Cloud credentials. The code will be ready, but sign-in won't work until this is configured.
 
