@@ -44,7 +44,10 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
-  const { user, signUp, signIn, resendConfirmation } = useAuth();
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const { user, signUp, signIn, signInWithGoogle, resendConfirmation, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -109,6 +112,27 @@ const Auth = () => {
         ? 'Invalid email or password.'
         : error.message;
       toast({ title: 'Sign in failed', description: message, variant: 'destructive' });
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    const { error } = await signInWithGoogle();
+    if (error) {
+      toast({ title: 'Google sign in failed', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!resetEmail) return;
+    setIsResettingPassword(true);
+    const { error } = await resetPassword(resetEmail);
+    setIsResettingPassword(false);
+    if (error) {
+      toast({ title: 'Could not send reset email', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Reset email sent!', description: 'Check your inbox for a password reset link.' });
+      setShowForgotPassword(false);
+      setResetEmail('');
     }
   };
 
