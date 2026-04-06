@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Upload, FileText, Sparkles, Trophy, Users, Settings, Copy, Check,
-  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye, BarChart3, Hammer, Share2, QrCode
+  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye, BarChart3, Hammer, Share2, QrCode, LogOut
 } from 'lucide-react';
 import { CardCascadeIllustration } from '@/components/illustrations/CardCascadeIllustration';
 import { DocumentFunnelIllustration } from '@/components/illustrations/DocumentFunnelIllustration';
@@ -376,6 +376,17 @@ const RoomPage = () => {
     const { error } = await supabase.from('quizzes').delete().eq('id', quizId);
     if (error) toast({ title: 'Failed to delete quiz', description: error.message, variant: 'destructive' });
     else { toast({ title: 'Quiz deleted' }); fetchRoomData(); }
+  };
+
+  const handleLeaveRoom = async () => {
+    if (!user || !roomId) return;
+    const { error } = await supabase.from('room_members').delete().eq('room_id', roomId).eq('user_id', user.id);
+    if (error) {
+      toast({ title: 'Failed to leave room', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Left room' });
+      navigate('/dashboard');
+    }
   };
 
   const getModeIcon = (mode: string) => {
