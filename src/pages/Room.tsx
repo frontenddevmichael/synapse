@@ -543,7 +543,29 @@ const RoomPage = () => {
                 {quizzes.length} quiz{quizzes.length !== 1 ? 'zes' : ''}
               </span>
             </div>
-            {/* Upload button — full width on mobile */}
+            <div className="flex items-center gap-2 mt-3 sm:mt-0 sm:absolute sm:right-8 sm:top-8">
+              {/* Leave Room — only for non-owners */}
+              {user?.id !== room.owner_id && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1.5 text-muted-foreground hover:text-destructive hover:border-destructive/50">
+                      <LogOut className="h-3.5 w-3.5" />
+                      Leave
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Leave this room?</AlertDialogTitle>
+                      <AlertDialogDescription>You'll need to rejoin with the room code to access it again.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleLeaveRoom}>Leave room</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            {/* Upload button */}
             <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2 font-semibold w-full sm:w-auto mt-3 sm:mt-0 sm:absolute sm:right-8 sm:top-8">
