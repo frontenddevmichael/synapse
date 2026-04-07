@@ -135,7 +135,7 @@ const Dashboard = () => {
     setIsSubmitting(false);
   };
 
-  const handleSignOut = async () => { await signOut(); navigate('/auth'); };
+  
 
   const getModeClass = (mode: string) => {
     const styles: Record<string, string> = { study: 'mode-study', challenge: 'mode-challenge', exam: 'mode-exam' };
