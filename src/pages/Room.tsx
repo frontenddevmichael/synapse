@@ -124,9 +124,9 @@ const RoomPage = () => {
   const [questionCount, setQuestionCount] = useState(10);
 
   useEffect(() => {
-    if (!user) { navigate('/auth'); return; }
+    if (!user) return;
     if (roomId) { fetchRoomData(); fetchUserPreferences(); }
-  }, [user, roomId, navigate]);
+  }, [user, roomId]);
 
   const fetchUserPreferences = async () => {
     if (!user) return;
@@ -421,7 +421,7 @@ const RoomPage = () => {
 
   if (isLoading || !room) {
     return (
-      <div className="min-h-screen flex flex-col bg-background dot-grid">
+      <div className="flex-1 flex flex-col bg-background dot-grid">
         <div className="flex-1 flex items-center justify-center">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
@@ -435,27 +435,20 @@ const RoomPage = () => {
   const modeBgClass = room.mode === 'study' ? 'mode-bg-study' : room.mode === 'challenge' ? 'mode-bg-challenge' : 'mode-bg-exam';
 
   return (
-    <div className="min-h-screen flex flex-col bg-background dot-grid">
+    <div className="flex-1 flex flex-col bg-background dot-grid pb-14 lg:pb-0">
       {/* Mode-specific ambient background */}
       <div className={`fixed inset-0 -z-10 ${modeBgClass}`} />
 
-      {/* Header */}
-      <header className="flex items-center justify-between px-3 sm:px-8 py-3 sm:py-4 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-40">
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px]">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <Logo />
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Badge variant="outline" className={`mode-${room.mode} gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 font-semibold text-[10px] sm:text-xs`}>
-            {getModeIcon(room.mode)}
-            <span className="hidden xs:inline">{getModeLabel(room.mode)}</span>
-            <span className="xs:hidden">{room.mode}</span>
-          </Badge>
-          <ThemeToggle />
-        </div>
-      </header>
+      {/* Room mode badge header strip */}
+      <div className="flex items-center justify-between px-3 sm:px-8 py-2 border-b border-border/30 bg-background/40 backdrop-blur-sm lg:hidden">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px]">
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <Badge variant="outline" className={`mode-${room.mode} gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 font-semibold text-[10px] sm:text-xs`}>
+          {getModeIcon(room.mode)}
+          {getModeLabel(room.mode)}
+        </Badge>
+      </div>
 
       {/* Room Hero — two-line on mobile */}
       <motion.div {...containerProps} className="border-b border-border/30 bg-card/30 backdrop-blur-sm">
