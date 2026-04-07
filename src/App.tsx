@@ -2,11 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { MobileNav } from "@/components/MobileNav";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AuthenticatedLayout } from "@/components/AuthenticatedLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -22,32 +23,11 @@ import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
-// Pages where bottom nav should show
-const MOBILE_NAV_PATHS = ['/dashboard', '/bookmarks', '/profile', '/preferences', '/recall'];
-
-function AppRoutes() {
-  const location = useLocation();
-  const showMobileNav = MOBILE_NAV_PATHS.includes(location.pathname) || location.pathname.startsWith('/room/');
-
+function ProtectedPage({ children }: { children: React.ReactNode }) {
   return (
-    <>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/room/:roomId" element={<Room />} />
-        <Route path="/quiz/:quizId" element={<Quiz />} />
-        <Route path="/preferences" element={<Preferences />} />
-        <Route path="/bookmarks" element={<Bookmarks />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/recall" element={<Recall />} />
-        <Route path="/join/:code" element={<JoinRoom />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      {showMobileNav && <MobileNav />}
-    </>
+    <ProtectedRoute>
+      <AuthenticatedLayout>{children}</AuthenticatedLayout>
+    </ProtectedRoute>
   );
 }
 
@@ -60,7 +40,21 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <AppRoutes />
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/join/:code" element={<JoinRoom />} />
+                <Route path="/dashboard" element={<ProtectedPage><Dashboard /></ProtectedPage>} />
+                <Route path="/room/:roomId" element={<ProtectedPage><Room /></ProtectedPage>} />
+                <Route path="/quiz/:quizId" element={<ProtectedRoute><Quiz /></ProtectedRoute>} />
+                <Route path="/preferences" element={<ProtectedPage><Preferences /></ProtectedPage>} />
+                <Route path="/bookmarks" element={<ProtectedPage><Bookmarks /></ProtectedPage>} />
+                <Route path="/profile" element={<ProtectedPage><Profile /></ProtectedPage>} />
+                <Route path="/recall" element={<ProtectedPage><Recall /></ProtectedPage>} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
             </BrowserRouter>
           </TooltipProvider>
         </AuthProvider>

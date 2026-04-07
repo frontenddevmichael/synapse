@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users, BookOpen, Trophy, LogOut, Settings, BarChart3, User, Zap, Flame, Bookmark, Brain } from 'lucide-react';
+import { Plus, Users, BookOpen, Trophy, Settings, BarChart3, Zap, Flame } from 'lucide-react';
 import { EmptyDeskIllustration } from '@/components/illustrations/EmptyDeskIllustration';
 import { OnboardingCard } from '@/components/dashboard/OnboardingCard';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -39,7 +39,7 @@ interface Room {
 }
 
 const Dashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { stats, newAchievement, clearNewAchievement, getXpProgress } = useGamification();
@@ -57,7 +57,7 @@ const Dashboard = () => {
   const xpProgress = getXpProgress();
 
   useEffect(() => {
-    if (!user) { navigate('/auth'); return; }
+    if (!user) return;
     fetchRooms();
     // Fetch recall due count
     supabase
@@ -135,7 +135,7 @@ const Dashboard = () => {
     setIsSubmitting(false);
   };
 
-  const handleSignOut = async () => { await signOut(); navigate('/auth'); };
+  
 
   const getModeClass = (mode: string) => {
     const styles: Record<string, string> = { study: 'mode-study', challenge: 'mode-challenge', exam: 'mode-exam' };
@@ -155,7 +155,7 @@ const Dashboard = () => {
   const itemProps = prefersReducedMotion ? {} : { variants: fadeUp };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background dot-grid pb-14 sm:pb-0">
+    <div className="flex-1 flex flex-col bg-background dot-grid pb-14 lg:pb-0">
 
       {newAchievement && (
         <AchievementToast
@@ -165,44 +165,9 @@ const Dashboard = () => {
         />
       )}
 
-      {/* Header — simplified on mobile (nav icons moved to bottom nav) */}
-      <header className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-40">
-        <Logo />
-        <div className="flex items-center gap-2 sm:gap-3">
-          {stats && (
-            <div className="hidden sm:flex items-center gap-3 mr-2">
-              <XpProgress level={stats.level} currentXp={xpProgress.current} maxXp={xpProgress.max} percentage={xpProgress.percentage} compact />
-              <StreakBadge days={stats.streak_days} />
-            </div>
-          )}
-          <ThemeToggle />
-          {/* Desktop-only nav icons */}
-          <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
-            <User className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/bookmarks')} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground" title="Study Deck">
-            <Bookmark className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/recall')} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground relative" title="Recall">
-            <Brain className="h-4 w-4" />
-            {recallDueCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
-                {recallDueCount > 99 ? '99+' : recallDueCount}
-              </span>
-            )}
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/preferences')} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
-            <Settings className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleSignOut} className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
-      </header>
-
       {/* Mobile XP/Streak strip */}
       {stats && (
-        <div className="sm:hidden flex items-center gap-3 px-4 py-2.5 border-b border-border/20 bg-background/40 backdrop-blur-sm">
+        <div className="lg:hidden flex items-center gap-3 px-4 py-2.5 border-b border-border/20 bg-background/40 backdrop-blur-sm">
           <Badge variant="outline" className="text-xs font-bold gap-1 shrink-0">
             <Zap className="h-3 w-3 text-primary" />
             Lv {stats.level}
@@ -214,9 +179,6 @@ const Dashboard = () => {
             <Flame className="h-3.5 w-3.5 text-warning" />
             {stats.streak_days}
           </div>
-          <Button variant="ghost" size="icon" onClick={handleSignOut} className="h-8 w-8 text-muted-foreground shrink-0">
-            <LogOut className="h-3.5 w-3.5" />
-          </Button>
         </div>
       )}
 

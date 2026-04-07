@@ -36,7 +36,7 @@ const Recall = () => {
   const [nextReviewDate, setNextReviewDate] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) { navigate('/auth'); return; }
+    if (!user) return;
     fetchDueCards();
   }, [user]);
 
@@ -129,7 +129,7 @@ const Recall = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background dot-grid">
+      <div className="flex-1 flex items-center justify-center bg-background dot-grid">
         <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
       </div>
     );
@@ -138,14 +138,7 @@ const Recall = () => {
   // Empty state
   if (cards.length === 0 && !completed) {
     return (
-      <div className="min-h-screen flex flex-col bg-background dot-grid">
-        <header className="flex items-center justify-between p-4 sm:p-6 border-b border-border/40 bg-background/80 backdrop-blur-md">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}><ArrowLeft className="h-4 w-4" /></Button>
-            <Logo />
-          </div>
-          <ThemeToggle />
-        </header>
+      <div className="flex-1 flex flex-col bg-background dot-grid pb-14 lg:pb-0">
         <main className="flex-1 flex items-center justify-center p-4">
           <motion.div variants={fadeUp} initial="hidden" animate="visible" className="text-center max-w-md">
             <Brain className="h-16 w-16 text-muted-foreground/40 mx-auto mb-4" />
@@ -162,14 +155,7 @@ const Recall = () => {
   if (completed) {
     const nextDate = nextReviewDate ? new Date(nextReviewDate) : null;
     return (
-      <div className="min-h-screen flex flex-col bg-background dot-grid">
-        <header className="flex items-center justify-between p-4 sm:p-6 border-b border-border/40 bg-background/80 backdrop-blur-md">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}><ArrowLeft className="h-4 w-4" /></Button>
-            <Logo />
-          </div>
-          <ThemeToggle />
-        </header>
+      <div className="flex-1 flex flex-col bg-background dot-grid pb-14 lg:pb-0">
         <main className="flex-1 flex items-center justify-center p-4">
           <motion.div variants={fadeUp} initial="hidden" animate="visible" className="text-center max-w-md">
             <CheckCircle className="h-16 w-16 text-success mx-auto mb-4" />
@@ -194,19 +180,12 @@ const Recall = () => {
 
   // Review UI
   return (
-    <div className="min-h-screen flex flex-col bg-background dot-grid">
-      <header className="flex items-center justify-between p-4 sm:p-6 border-b border-border/40 bg-background/80 backdrop-blur-md">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}><ArrowLeft className="h-4 w-4" /></Button>
-          <Logo />
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground font-mono">
-            {reviewedCount + 1}/{cards.length}
-          </span>
-          <ThemeToggle />
-        </div>
-      </header>
+    <div className="flex-1 flex flex-col bg-background dot-grid pb-14 lg:pb-0">
+      <div className="flex items-center justify-end px-4 sm:px-8 py-2 border-b border-border/30 bg-background/40 backdrop-blur-sm lg:hidden">
+        <span className="text-sm text-muted-foreground font-mono">
+          {reviewedCount + 1}/{cards.length}
+        </span>
+      </div>
 
       {/* Progress bar */}
       <div className="px-4 sm:px-8 pt-4">
