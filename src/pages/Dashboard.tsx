@@ -39,7 +39,7 @@ interface Room {
 }
 
 const Dashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { stats, newAchievement, clearNewAchievement, getXpProgress } = useGamification();
