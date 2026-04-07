@@ -180,19 +180,12 @@ const Recall = () => {
 
   // Review UI
   return (
-    <div className="min-h-screen flex flex-col bg-background dot-grid">
-      <header className="flex items-center justify-between p-4 sm:p-6 border-b border-border/40 bg-background/80 backdrop-blur-md">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}><ArrowLeft className="h-4 w-4" /></Button>
-          <Logo />
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground font-mono">
-            {reviewedCount + 1}/{cards.length}
-          </span>
-          <ThemeToggle />
-        </div>
-      </header>
+    <div className="flex-1 flex flex-col bg-background dot-grid pb-14 lg:pb-0">
+      <div className="flex items-center justify-end px-4 sm:px-8 py-2 border-b border-border/30 bg-background/40 backdrop-blur-sm lg:hidden">
+        <span className="text-sm text-muted-foreground font-mono">
+          {reviewedCount + 1}/{cards.length}
+        </span>
+      </div>
 
       {/* Progress bar */}
       <div className="px-4 sm:px-8 pt-4">
