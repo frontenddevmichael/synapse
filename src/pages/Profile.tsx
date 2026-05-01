@@ -116,10 +116,20 @@ const Profile = () => {
                     <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Optional" className="h-11" />
                   </div>
                 </div>
-                <Button onClick={handleSave} disabled={isSaving || !username.trim()} className="gap-2 font-semibold w-full sm:w-auto">
-                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Save
-                </Button>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input value={user?.email ?? ''} readOnly disabled className="h-11" />
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between pt-2">
+                  <Button onClick={handleSave} disabled={isSaving || !username.trim()} className="gap-2 font-semibold w-full sm:w-auto">
+                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Save
+                  </Button>
+                  <Button variant="outline" onClick={handleSignOut} className="gap-2 font-semibold w-full sm:w-auto">
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </motion.div>
