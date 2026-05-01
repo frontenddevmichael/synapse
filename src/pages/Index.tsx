@@ -33,19 +33,19 @@ const Index = () => {
     if (!loading && user && !stayOnLanding) navigate('/dashboard');
   }, [user, loading, navigate, stayOnLanding]);
 
-  // Avoid flashing landing markup while we redirect signed-in users
-  if (loading || (user && !stayOnLanding)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background dot-grid" />
-    );
-  }
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowInstallBanner(shouldShowPrompt);
     }, 3000);
     return () => clearTimeout(timer);
   }, [shouldShowPrompt]);
+
+  // Avoid flashing landing markup while we redirect signed-in users
+  if (loading || (user && !stayOnLanding)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background dot-grid" />
+    );
+  }
 
   const animationProps = prefersReducedMotion
     ? {}
