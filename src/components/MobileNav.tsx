@@ -35,6 +35,9 @@ export function MobileNav() {
   const isQuizPage = location.pathname.startsWith('/quiz/');
   
   const isActive = (path: string) => {
+    if (path === '/dashboard') {
+      return location.pathname === '/dashboard' || location.pathname.startsWith('/room/');
+    }
     if (path.includes('?')) return location.pathname + location.search === path;
     return location.pathname === path;
   };

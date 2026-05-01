@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 
@@ -23,13 +23,22 @@ import { SynapsePatternBg } from '@/components/illustrations/SynapsePatternBg';
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const stayOnLanding = searchParams.get('landing') === '1';
   const { shouldShowPrompt } = usePWAInstall();
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
-    if (!loading && user) navigate('/dashboard');
-  }, [user, loading, navigate]);
+    if (!loading && user && !stayOnLanding) navigate('/dashboard');
+  }, [user, loading, navigate, stayOnLanding]);
+
+  // Avoid flashing landing markup while we redirect signed-in users
+  if (loading || (user && !stayOnLanding)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background dot-grid" />
+    );
+  }
 
   useEffect(() => {
     const timer = setTimeout(() => {
