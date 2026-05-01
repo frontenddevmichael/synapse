@@ -16,10 +16,17 @@ import { AchievementShowcase, TrophyCase } from '@/components/gamification/Achie
 import { fadeUp, staggerFast } from '@/lib/motion';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { stats, achievements, earnedAchievements, isLoading: gamLoading, getXpProgress } = useGamification();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({ title: 'Signed out' });
+    navigate('/');
+  };
+
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
