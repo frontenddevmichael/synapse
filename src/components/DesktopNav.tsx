@@ -1,6 +1,8 @@
 import { Home, Bookmark, Brain, User, Settings, LogOut } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { Logo } from '@/components/Logo';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -15,14 +17,28 @@ export function DesktopNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { toast } = useToast();
 
   const isActive = (path: string) => {
     if (path === '/dashboard') return location.pathname === '/dashboard' || location.pathname.startsWith('/room/');
     return location.pathname === path;
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    toast({ title: 'Signed out' });
+    navigate('/');
+  };
+
   return (
     <aside className="hidden lg:flex flex-col w-56 border-r border-border/40 bg-background/50 backdrop-blur-sm shrink-0">
+      <button
+        onClick={() => navigate('/dashboard')}
+        className="flex items-center px-5 h-16 border-b border-border/40 hover:bg-muted/30 transition-colors"
+        aria-label="Dashboard"
+      >
+        <Logo size="lg" />
+      </button>
       <nav className="flex-1 py-4 px-3 space-y-1">
         {navItems.map(({ path, icon: Icon, label }) => (
           <button
@@ -42,7 +58,7 @@ export function DesktopNav() {
       </nav>
       <div className="p-3 border-t border-border/40">
         <button
-          onClick={async () => { await signOut(); navigate('/auth'); }}
+          onClick={handleSignOut}
           className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
         >
           <LogOut className="h-4 w-4" />

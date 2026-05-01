@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Trophy, Zap, Target } from 'lucide-react';
+import { Save, Loader2, Trophy, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Logo } from '@/components/Logo';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,10 +16,17 @@ import { AchievementShowcase, TrophyCase } from '@/components/gamification/Achie
 import { fadeUp, staggerFast } from '@/lib/motion';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { stats, achievements, earnedAchievements, isLoading: gamLoading, getXpProgress } = useGamification();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({ title: 'Signed out' });
+    navigate('/');
+  };
+
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -111,10 +116,20 @@ const Profile = () => {
                     <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Optional" className="h-11" />
                   </div>
                 </div>
-                <Button onClick={handleSave} disabled={isSaving || !username.trim()} className="gap-2 font-semibold w-full sm:w-auto">
-                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Save
-                </Button>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input value={user?.email ?? ''} readOnly disabled className="h-11" />
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between pt-2">
+                  <Button onClick={handleSave} disabled={isSaving || !username.trim()} className="gap-2 font-semibold w-full sm:w-auto">
+                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Save
+                  </Button>
+                  <Button variant="outline" onClick={handleSignOut} className="gap-2 font-semibold w-full sm:w-auto">
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </motion.div>

@@ -439,11 +439,8 @@ const RoomPage = () => {
       {/* Mode-specific ambient background */}
       <div className={`fixed inset-0 -z-10 ${modeBgClass}`} />
 
-      {/* Room mode badge header strip */}
-      <div className="flex items-center justify-between px-3 sm:px-8 py-2 border-b border-border/30 bg-background/40 backdrop-blur-sm lg:hidden">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px]">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+      {/* Mobile-only mode badge strip (header is provided by AuthenticatedLayout) */}
+      <div className="flex items-center justify-end px-3 sm:px-8 py-2 border-b border-border/30 bg-background/40 backdrop-blur-sm lg:hidden">
         <Badge variant="outline" className={`mode-${room.mode} gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 font-semibold text-[10px] sm:text-xs`}>
           {getModeIcon(room.mode)}
           {getModeLabel(room.mode)}
