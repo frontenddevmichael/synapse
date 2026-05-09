@@ -32,7 +32,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { extractTextFromPDFWithProgress, formatFileSize, isFileTooLarge } from '@/lib/pdfParser';
+import { formatFileSize, isFileTooLarge } from '@/lib/pdfParser';
+import { parseDocument, isSupportedFile, SUPPORTED_ACCEPT } from '@/lib/documentParser';
 import { Progress } from '@/components/ui/progress';
 import { QuestionCountSelector } from '@/components/quiz/QuestionCountSelector';
 import { RoomSettings } from '@/components/room/RoomSettings';
@@ -116,6 +117,8 @@ const RoomPage = () => {
   const [isParsing, setIsParsing] = useState(false);
   const [parseProgress, setParseProgress] = useState<{ current: number; total: number } | null>(null);
   const [uploadStage, setUploadStage] = useState<'idle' | 'parsing' | 'saving' | 'done' | 'error'>('idle');
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<string>('');
@@ -218,47 +221,71 @@ const RoomPage = () => {
     }
   };
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
+  const processFile = async (file: File) => {
+    setUploadError(null);
+
     if (isFileTooLarge(file, 10)) {
-      toast({ title: 'File too large', description: 'Maximum file size is 10 MB.', variant: 'destructive' });
+      const msg = 'Maximum file size is 10 MB.';
+      setUploadError(msg);
+      toast({ title: 'File too large', description: msg, variant: 'destructive' });
       return;
     }
-    
+
+    if (!isSupportedFile(file)) {
+      const msg = `Unsupported file type. Please use PDF, DOCX, TXT, MD, or CSV.`;
+      setUploadError(msg);
+      toast({ title: 'Unsupported file', description: msg, variant: 'destructive' });
+      return;
+    }
+
     setSelectedFile(file);
     if (!docName) setDocName(file.name.replace(/\.[^/.]+$/, ''));
 
     setIsParsing(true);
     setUploadStage('parsing');
     setParseProgress(null);
+
     try {
-      let content = '';
-      if (file.type === 'application/pdf') {
-        const result = await extractTextFromPDFWithProgress(file, (current, total) => {
-          setParseProgress({ current, total });
-        });
-        content = result.text;
-      } else {
-        content = await file.text();
+      const result = await parseDocument(file, (p) => setParseProgress(p));
+      if (!result.text.trim()) {
+        throw new Error('No text could be extracted from this file. It may be empty, image-only, or password-protected.');
       }
-      if (!content.trim()) {
-        throw new Error('No text could be extracted from this file.');
-      }
-      setDocContent(content);
+      setDocContent(result.text);
       setUploadStage('idle');
-      toast({ title: 'File parsed successfully', description: `Extracted ${content.length.toLocaleString()} characters` });
+      toast({
+        title: 'File parsed successfully',
+        description: `Extracted ${result.charCount.toLocaleString()} characters`,
+      });
     } catch (error) {
-      console.error('File parsing error:', error);
+      console.error('[upload] File parsing error:', error);
+      const msg = error instanceof Error ? error.message : 'Please try a different file';
       setUploadStage('error');
-      toast({ title: 'Failed to parse file', description: error instanceof Error ? error.message : 'Please try a different file', variant: 'destructive' });
+      setUploadError(msg);
+      toast({ title: 'Failed to parse file', description: msg, variant: 'destructive' });
       setSelectedFile(null);
-    } finally { setIsParsing(false); setParseProgress(null); }
+    } finally {
+      setIsParsing(false);
+      setParseProgress(null);
+    }
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    // Reset input so re-selecting the same file re-fires onChange
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (!file) return;
+    await processFile(file);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await processFile(file);
   };
 
   const clearSelectedFile = () => {
-    setSelectedFile(null); setDocContent('');
+    setSelectedFile(null); setDocContent(''); setUploadError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
