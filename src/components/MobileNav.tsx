@@ -33,10 +33,14 @@ export function MobileNav() {
 
   // Hide on quiz pages
   const isQuizPage = location.pathname.startsWith('/quiz/');
-  
+
   const isActive = (path: string) => {
     if (path === '/dashboard') {
-      return location.pathname === '/dashboard' || location.pathname.startsWith('/room/');
+      return (
+        location.pathname === '/dashboard' ||
+        location.pathname.startsWith('/room/') ||
+        location.pathname.startsWith('/quiz/')
+      );
     }
     if (path.includes('?')) return location.pathname + location.search === path;
     return location.pathname === path;

@@ -43,25 +43,33 @@ const Bookmarks = () => {
 
   const fetchBookmarks = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from('bookmarked_questions')
-      .select(`
-        id, notes, created_at,
-        question:questions(id, question_text, options, correct_answer, explanation, question_type)
-      `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('bookmarked_questions')
+        .select(`
+          id, notes, created_at,
+          question:questions(id, question_text, options, correct_answer, explanation, question_type)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (data) {
-      setBookmarks(data.filter((b: any) => b.question).map((b: any) => ({
-        ...b,
-        question: {
-          ...b.question,
-          options: typeof b.question.options === 'string' ? JSON.parse(b.question.options) : b.question.options
-        }
-      })));
+      if (error) throw error;
+
+      if (data) {
+        setBookmarks(data.filter((b: any) => b.question).map((b: any) => ({
+          ...b,
+          question: {
+            ...b.question,
+            options: typeof b.question.options === 'string' ? JSON.parse(b.question.options) : b.question.options
+          }
+        })));
+      }
+    } catch (err) {
+      console.error('[bookmarks] fetch failed', err);
+      toast({ title: 'Could not load bookmarks', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleRemoveBookmark = async (bookmarkId: string) => {
@@ -107,7 +115,8 @@ const Bookmarks = () => {
             <motion.div variants={fadeUp} className="bento-card py-12 sm:py-16 flex flex-col items-center text-center">
               <EmptyDeckIllustration className="w-40 h-32 mb-3 sm:mb-4" />
               <h3 className="font-bold text-base sm:text-lg mb-1">Your deck is empty</h3>
-              <p className="text-sm text-muted-foreground">Bookmark questions during quizzes to build your personal review deck</p>
+              <p className="text-sm text-muted-foreground mb-4">Bookmark questions during quizzes to build your personal review deck</p>
+              <Button onClick={() => navigate('/dashboard')} className="font-semibold">Browse rooms</Button>
             </motion.div>
           ) : (
             <div className="space-y-3 sm:space-y-4">

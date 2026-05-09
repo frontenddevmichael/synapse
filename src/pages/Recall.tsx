@@ -41,48 +41,54 @@ const Recall = () => {
   const fetchDueCards = async () => {
     if (!user) return;
     setIsLoading(true);
-    const { data } = await supabase
-      .from('recall_cards')
-      .select('id, question_id, interval_days, ease_factor, repetitions, next_review_at')
-      .eq('user_id', user.id)
-      .lte('next_review_at', new Date().toISOString())
-      .order('next_review_at', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('recall_cards')
+        .select('id, question_id, interval_days, ease_factor, repetitions, next_review_at')
+        .eq('user_id', user.id)
+        .lte('next_review_at', new Date().toISOString())
+        .order('next_review_at', { ascending: true });
 
-    if (!data?.length) {
+      if (error) throw error;
+
+      if (!data?.length) {
+        setCards([]);
+        return;
+      }
+
+      const questionIds = data.map((c: any) => c.question_id);
+      const { data: questions } = await supabase
+        .from('questions')
+        .select('id, question_text, correct_answer, options')
+        .in('id', questionIds);
+
+      const questionMap: Record<string, any> = {};
+      (questions || []).forEach((q: any) => {
+        questionMap[q.id] = q;
+      });
+
+      const enriched: RecallCard[] = data
+        .filter((c: any) => questionMap[c.question_id])
+        .map((c: any) => ({
+          id: c.id,
+          question_id: c.question_id,
+          interval_days: c.interval_days,
+          ease_factor: c.ease_factor,
+          repetitions: c.repetitions,
+          question_text: questionMap[c.question_id].question_text,
+          correct_answer: questionMap[c.question_id].correct_answer,
+          options: typeof questionMap[c.question_id].options === 'string'
+            ? JSON.parse(questionMap[c.question_id].options)
+            : questionMap[c.question_id].options,
+        }));
+
+      setCards(enriched);
+    } catch (err) {
+      console.error('[recall] fetch failed', err);
       setCards([]);
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    // Fetch question details
-    const questionIds = data.map((c: any) => c.question_id);
-    const { data: questions } = await supabase
-      .from('questions')
-      .select('id, question_text, correct_answer, options')
-      .in('id', questionIds);
-
-    const questionMap: Record<string, any> = {};
-    (questions || []).forEach((q: any) => {
-      questionMap[q.id] = q;
-    });
-
-    const enriched: RecallCard[] = data
-      .filter((c: any) => questionMap[c.question_id])
-      .map((c: any) => ({
-        id: c.id,
-        question_id: c.question_id,
-        interval_days: c.interval_days,
-        ease_factor: c.ease_factor,
-        repetitions: c.repetitions,
-        question_text: questionMap[c.question_id].question_text,
-        correct_answer: questionMap[c.question_id].correct_answer,
-        options: typeof questionMap[c.question_id].options === 'string'
-          ? JSON.parse(questionMap[c.question_id].options)
-          : questionMap[c.question_id].options,
-      }));
-
-    setCards(enriched);
-    setIsLoading(false);
   };
 
   const handleRate = async (quality: number) => {

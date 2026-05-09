@@ -32,7 +32,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { extractTextFromPDFWithProgress, formatFileSize, isFileTooLarge } from '@/lib/pdfParser';
+import { formatFileSize, isFileTooLarge } from '@/lib/pdfParser';
+import { parseDocument, isSupportedFile, SUPPORTED_ACCEPT } from '@/lib/documentParser';
 import { Progress } from '@/components/ui/progress';
 import { QuestionCountSelector } from '@/components/quiz/QuestionCountSelector';
 import { RoomSettings } from '@/components/room/RoomSettings';
@@ -116,6 +117,8 @@ const RoomPage = () => {
   const [isParsing, setIsParsing] = useState(false);
   const [parseProgress, setParseProgress] = useState<{ current: number; total: number } | null>(null);
   const [uploadStage, setUploadStage] = useState<'idle' | 'parsing' | 'saving' | 'done' | 'error'>('idle');
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<string>('');
@@ -218,47 +221,71 @@ const RoomPage = () => {
     }
   };
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
+  const processFile = async (file: File) => {
+    setUploadError(null);
+
     if (isFileTooLarge(file, 10)) {
-      toast({ title: 'File too large', description: 'Maximum file size is 10 MB.', variant: 'destructive' });
+      const msg = 'Maximum file size is 10 MB.';
+      setUploadError(msg);
+      toast({ title: 'File too large', description: msg, variant: 'destructive' });
       return;
     }
-    
+
+    if (!isSupportedFile(file)) {
+      const msg = `Unsupported file type. Please use PDF, DOCX, TXT, MD, or CSV.`;
+      setUploadError(msg);
+      toast({ title: 'Unsupported file', description: msg, variant: 'destructive' });
+      return;
+    }
+
     setSelectedFile(file);
     if (!docName) setDocName(file.name.replace(/\.[^/.]+$/, ''));
 
     setIsParsing(true);
     setUploadStage('parsing');
     setParseProgress(null);
+
     try {
-      let content = '';
-      if (file.type === 'application/pdf') {
-        const result = await extractTextFromPDFWithProgress(file, (current, total) => {
-          setParseProgress({ current, total });
-        });
-        content = result.text;
-      } else {
-        content = await file.text();
+      const result = await parseDocument(file, (p) => setParseProgress(p));
+      if (!result.text.trim()) {
+        throw new Error('No text could be extracted from this file. It may be empty, image-only, or password-protected.');
       }
-      if (!content.trim()) {
-        throw new Error('No text could be extracted from this file.');
-      }
-      setDocContent(content);
+      setDocContent(result.text);
       setUploadStage('idle');
-      toast({ title: 'File parsed successfully', description: `Extracted ${content.length.toLocaleString()} characters` });
+      toast({
+        title: 'File parsed successfully',
+        description: `Extracted ${result.charCount.toLocaleString()} characters`,
+      });
     } catch (error) {
-      console.error('File parsing error:', error);
+      console.error('[upload] File parsing error:', error);
+      const msg = error instanceof Error ? error.message : 'Please try a different file';
       setUploadStage('error');
-      toast({ title: 'Failed to parse file', description: error instanceof Error ? error.message : 'Please try a different file', variant: 'destructive' });
+      setUploadError(msg);
+      toast({ title: 'Failed to parse file', description: msg, variant: 'destructive' });
       setSelectedFile(null);
-    } finally { setIsParsing(false); setParseProgress(null); }
+    } finally {
+      setIsParsing(false);
+      setParseProgress(null);
+    }
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    // Reset input so re-selecting the same file re-fires onChange
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (!file) return;
+    await processFile(file);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await processFile(file);
   };
 
   const clearSelectedFile = () => {
-    setSelectedFile(null); setDocContent('');
+    setSelectedFile(null); setDocContent(''); setUploadError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -274,9 +301,12 @@ const RoomPage = () => {
       toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
     } else {
       setUploadStage('done');
-      // Optimistic: add locally before full refetch
+      // Optimistic update; refetch will reconcile + dedupe by id
       if (inserted) {
-        setDocuments(prev => [inserted as Document, ...prev]);
+        setDocuments(prev => {
+          const existing = new Set(prev.map(d => d.id));
+          return existing.has((inserted as Document).id) ? prev : [inserted as Document, ...prev];
+        });
       }
       toast({ title: 'Document uploaded!', description: 'You can now generate quizzes from this document.' });
       setDocName(''); setDocContent(''); setSelectedFile(null); setUploadMode('paste'); setIsUploadOpen(false);
@@ -563,7 +593,7 @@ const RoomPage = () => {
                   Upload
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg mx-4 sm:mx-auto">
+              <DialogContent className="max-w-lg mx-4 sm:mx-auto max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="text-lg sm:text-xl font-bold">Upload Document</DialogTitle>
                   <DialogDescription className="text-xs sm:text-sm">Upload a PDF or paste your study material to generate quizzes</DialogDescription>
@@ -591,12 +621,23 @@ const RoomPage = () => {
                       <Label>File</Label>
                       {!selectedFile ? (
                         <div
-                          className="border-2 border-dashed border-border rounded-xl p-5 sm:p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                          className={`border-2 border-dashed rounded-xl p-5 sm:p-8 text-center cursor-pointer transition-colors ${
+                            isDragging
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border hover:border-primary/50'
+                          }`}
                           onClick={() => fileInputRef.current?.click()}
+                          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                          onDragLeave={() => setIsDragging(false)}
+                          onDrop={handleDrop}
                         >
                           <File className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-2 sm:mb-3 text-muted-foreground" />
-                          <p className="text-xs sm:text-sm font-medium">Click to upload a file</p>
-                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">PDF, TXT, or MD files supported</p>
+                          <p className="text-xs sm:text-sm font-medium">
+                            {isDragging ? 'Drop file here' : 'Click or drag a file to upload'}
+                          </p>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+                            PDF, DOCX, TXT, MD, or CSV — max 10 MB
+                          </p>
                         </div>
                       ) : (
                         <div className="border border-border rounded-xl p-3 sm:p-4">
@@ -630,12 +671,20 @@ const RoomPage = () => {
                           )}
                         </div>
                       )}
-                      <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md" onChange={handleFileSelect} className="hidden" />
+                      {uploadError && (
+                        <p className="text-xs text-destructive mt-1">{uploadError}</p>
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept={SUPPORTED_ACCEPT}
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
                     </div>
                   )}
                   <Button className="w-full h-11 font-semibold" onClick={handleUploadDocument} disabled={isUploading || isParsing || !docName.trim() || !docContent.trim()}>
-                    {isParsing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {(isParsing || isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isParsing ? 'Parsing file…' : isUploading ? 'Saving document…' : 'Upload Document'}
                   </Button>
                 </div>
