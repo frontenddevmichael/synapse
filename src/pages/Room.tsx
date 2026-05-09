@@ -301,9 +301,12 @@ const RoomPage = () => {
       toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
     } else {
       setUploadStage('done');
-      // Optimistic: add locally before full refetch
+      // Optimistic update; refetch will reconcile + dedupe by id
       if (inserted) {
-        setDocuments(prev => [inserted as Document, ...prev]);
+        setDocuments(prev => {
+          const existing = new Set(prev.map(d => d.id));
+          return existing.has((inserted as Document).id) ? prev : [inserted as Document, ...prev];
+        });
       }
       toast({ title: 'Document uploaded!', description: 'You can now generate quizzes from this document.' });
       setDocName(''); setDocContent(''); setSelectedFile(null); setUploadMode('paste'); setIsUploadOpen(false);
