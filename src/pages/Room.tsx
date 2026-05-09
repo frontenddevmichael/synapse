@@ -590,7 +590,7 @@ const RoomPage = () => {
                   Upload
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg mx-4 sm:mx-auto">
+              <DialogContent className="max-w-lg mx-4 sm:mx-auto max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="text-lg sm:text-xl font-bold">Upload Document</DialogTitle>
                   <DialogDescription className="text-xs sm:text-sm">Upload a PDF or paste your study material to generate quizzes</DialogDescription>
