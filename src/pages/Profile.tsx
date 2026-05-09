@@ -21,10 +21,17 @@ const Profile = () => {
   const { toast } = useToast();
   const { stats, achievements, earnedAchievements, isLoading: gamLoading, getXpProgress } = useGamification();
 
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
   const handleSignOut = async () => {
-    await signOut();
-    toast({ title: 'Signed out' });
-    navigate('/');
+    setIsSigningOut(true);
+    try {
+      await signOut();
+      toast({ title: 'Signed out' });
+      navigate('/');
+    } finally {
+      setIsSigningOut(false);
+    }
   };
 
   const [username, setUsername] = useState('');
@@ -125,8 +132,8 @@ const Profile = () => {
                     {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                     Save
                   </Button>
-                  <Button variant="outline" onClick={handleSignOut} className="gap-2 font-semibold w-full sm:w-auto">
-                    <LogOut className="h-4 w-4" />
+                  <Button variant="outline" onClick={handleSignOut} disabled={isSigningOut} className="gap-2 font-semibold w-full sm:w-auto">
+                    {isSigningOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
                     Sign out
                   </Button>
                 </div>
