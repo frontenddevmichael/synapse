@@ -23,7 +23,7 @@ export function ActivityFeed({ roomId }: ActivityFeedProps) {
   }, [roomId]);
 
   const fetchActivity = async () => {
-    // Fetch recent document uploads
+    // Recent uploads
     const { data: docs } = await supabase
       .from('documents')
       .select('id, name, created_at, uploaded_by, profile:profiles!documents_uploaded_by_fkey(username)')
@@ -31,14 +31,27 @@ export function ActivityFeed({ roomId }: ActivityFeedProps) {
       .order('created_at', { ascending: false })
       .limit(5);
 
-    // Fetch recent quiz completions
-    const { data: attempts } = await supabase
-      .from('quiz_attempts')
-      .select('id, score, completed_at, user_id, quiz:quizzes!inner(room_id, title), profile:profiles!quiz_attempts_user_id_fkey(username)')
-      .eq('quiz.room_id', roomId)
-      .eq('status', 'completed')
-      .order('completed_at', { ascending: false })
-      .limit(5);
+    // Get quiz IDs in this room first, then attempts
+    const { data: roomQuizzes } = await supabase
+      .from('quizzes')
+      .select('id, title')
+      .eq('room_id', roomId);
+
+    const quizMap = new Map<string, string>();
+    (roomQuizzes || []).forEach((q: any) => quizMap.set(q.id, q.title));
+    const quizIds = Array.from(quizMap.keys());
+
+    let attempts: any[] | null = null;
+    if (quizIds.length > 0) {
+      const { data } = await supabase
+        .from('quiz_attempts')
+        .select('id, score, completed_at, user_id, quiz_id, profile:profiles!quiz_attempts_user_id_fkey(username)')
+        .in('quiz_id', quizIds)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .limit(5);
+      attempts = data;
+    }
 
     const items: ActivityItem[] = [];
 
@@ -58,7 +71,7 @@ export function ActivityFeed({ roomId }: ActivityFeedProps) {
           id: `attempt-${a.id}`,
           type: 'quiz_complete',
           username: a.profile?.username || 'Someone',
-          detail: `${a.score}% on ${a.quiz?.title || 'quiz'}`,
+          detail: `${a.score}% on ${quizMap.get(a.quiz_id) || 'quiz'}`,
           timestamp: a.completed_at,
         });
       }
