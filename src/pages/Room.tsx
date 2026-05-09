@@ -618,12 +618,23 @@ const RoomPage = () => {
                       <Label>File</Label>
                       {!selectedFile ? (
                         <div
-                          className="border-2 border-dashed border-border rounded-xl p-5 sm:p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                          className={`border-2 border-dashed rounded-xl p-5 sm:p-8 text-center cursor-pointer transition-colors ${
+                            isDragging
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border hover:border-primary/50'
+                          }`}
                           onClick={() => fileInputRef.current?.click()}
+                          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                          onDragLeave={() => setIsDragging(false)}
+                          onDrop={handleDrop}
                         >
                           <File className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-2 sm:mb-3 text-muted-foreground" />
-                          <p className="text-xs sm:text-sm font-medium">Click to upload a file</p>
-                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">PDF, TXT, or MD files supported</p>
+                          <p className="text-xs sm:text-sm font-medium">
+                            {isDragging ? 'Drop file here' : 'Click or drag a file to upload'}
+                          </p>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+                            PDF, DOCX, TXT, MD, or CSV — max 10 MB
+                          </p>
                         </div>
                       ) : (
                         <div className="border border-border rounded-xl p-3 sm:p-4">
@@ -657,12 +668,20 @@ const RoomPage = () => {
                           )}
                         </div>
                       )}
-                      <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md" onChange={handleFileSelect} className="hidden" />
+                      {uploadError && (
+                        <p className="text-xs text-destructive mt-1">{uploadError}</p>
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept={SUPPORTED_ACCEPT}
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
                     </div>
                   )}
                   <Button className="w-full h-11 font-semibold" onClick={handleUploadDocument} disabled={isUploading || isParsing || !docName.trim() || !docContent.trim()}>
-                    {isParsing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {(isParsing || isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isParsing ? 'Parsing file…' : isUploading ? 'Saving document…' : 'Upload Document'}
                   </Button>
                 </div>
