@@ -114,6 +114,7 @@ export function AchievementToast({ name, description, icon, xpReward, onClose }:
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Dismiss achievement"
               className="absolute top-3 right-3 h-8 w-8 text-muted-foreground hover:text-foreground relative"
               onClick={onClose}
             >

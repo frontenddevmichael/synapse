@@ -161,7 +161,7 @@ export function RoomSettings({
               {member.user_id !== ownerId && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                    <Button variant="ghost" size="icon" aria-label="Remove member" className="h-8 w-8 text-muted-foreground hover:text-destructive">
                       <UserMinus className="h-4 w-4" />
                     </Button>
                   </AlertDialogTrigger>

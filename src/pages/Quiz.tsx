@@ -351,7 +351,7 @@ const QuizPage = () => {
       <div className={`min-h-screen flex flex-col bg-background dot-grid ${getModeBackground()}`}>
         <header className="flex items-center justify-between p-4 sm:p-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" aria-label="Go back" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4" /></Button>
             <Logo />
           </div>
           <div className="flex items-center gap-2">
@@ -416,7 +416,7 @@ const QuizPage = () => {
         {newAchievement && <AchievementToast name={newAchievement.name} description={newAchievement.description} icon={newAchievement.icon} xpReward={newAchievement.xp_reward} onClose={clearNewAchievement} />}
         <header className="flex items-center justify-between p-4 sm:p-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="min-h-[44px] min-w-[44px]"><ArrowLeft className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" aria-label="Go back" onClick={() => navigate(-1)} className="min-h-[44px] min-w-[44px]"><ArrowLeft className="h-4 w-4" /></Button>
             <Logo />
           </div>
           <ThemeToggle />
