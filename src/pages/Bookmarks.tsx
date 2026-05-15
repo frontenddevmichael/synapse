@@ -133,7 +133,7 @@ const Bookmarks = () => {
                       <p className="font-serif text-base sm:text-lg leading-relaxed flex-1">{bookmark.question.question_text}</p>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-8 sm:w-8 shrink-0 text-muted-foreground hover:text-destructive min-h-[44px] min-w-[44px]">
+                          <Button variant="ghost" size="icon" aria-label="Remove bookmark" className="h-10 w-10 sm:h-8 sm:w-8 shrink-0 text-muted-foreground hover:text-destructive min-h-[44px] min-w-[44px]">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
