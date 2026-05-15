@@ -649,7 +649,7 @@ const RoomPage = () => {
                                 <p className="text-[10px] sm:text-xs text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
                               </div>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={clearSelectedFile} disabled={isParsing} className="min-h-[44px] min-w-[44px]">
+                            <Button variant="ghost" size="icon" onClick={clearSelectedFile} disabled={isParsing} aria-label="Remove selected file" className="min-h-[44px] min-w-[44px]">
                               {isParsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
                             </Button>
                           </div>
