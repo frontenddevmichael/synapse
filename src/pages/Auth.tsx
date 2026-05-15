@@ -330,6 +330,7 @@ const Auth = () => {
                             type="button"
                             variant="ghost"
                             size="icon"
+                            aria-label={showPassword ? 'Hide password' : 'Show password'}
                             className="absolute right-1 top-1 h-9 w-9 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px]"
                             onClick={() => setShowPassword(!showPassword)}
                           >
