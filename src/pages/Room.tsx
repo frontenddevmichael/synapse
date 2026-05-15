@@ -858,6 +858,7 @@ const RoomPage = () => {
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon"
+                                  aria-label={`Delete quiz ${quiz.title}`}
                                   className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                                   onClick={(e) => e.stopPropagation()}>
                                   <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
