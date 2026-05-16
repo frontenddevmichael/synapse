@@ -1,58 +1,63 @@
-# Fix Document Upload + Sitewide Cleanup
+# Full Audit — Waves 2 through 7
 
-## Phase 1 — Fix Upload (root cause)
+Continue the ruthless production audit, executing every remaining wave back-to-back without stopping for confirmation.
 
-The upload picker in `src/pages/Room.tsx` uses `accept=".pdf,.txt,.md"` and only branches on `file.type === 'application/pdf'`. On many devices (Safari/iOS, some Android, even desktop when MIME is unknown) this either blocks the picker silently or accepts a file that can't be parsed — matching your "nothing happens at all" symptom. There's also no console output, so failures are invisible.
+## Wave 2 — Room.tsx Refactor
+Split the 1100+ line `src/pages/Room.tsx` into focused components under `src/components/room/`:
+- `RoomHeader.tsx` — title, join code, member count, settings entry
+- `UploadDialog.tsx` — file input, drag/drop, parser progress, error states (extract from Room)
+- `DocumentList.tsx` — uploaded documents grid + previews
+- `QuizLauncher.tsx` — mode/question-count selectors and start CTA
+- `MembersPanel.tsx` — member list + presence
+Keep `Room.tsx` as orchestration only (data fetching + composition). Preserve all existing behavior; no API/schema changes.
 
-**Fixes:**
-- Broaden `accept` to `.pdf,.txt,.md,.docx,.csv,application/pdf,text/plain,text/markdown,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document` so the OS picker doesn't silently filter the file out.
-- Detect type by **extension** (not just `file.type`) and route accordingly:
-  - `.pdf` → existing pdf.js path
-  - `.txt`, `.md`, `.csv` → `file.text()`
-  - `.docx` → add `mammoth` (`bun add mammoth`) and use `extractRawText({ arrayBuffer })`
-  - Unknown → clear toast: "Unsupported file type — use PDF, DOCX, TXT, MD".
-- Add a top-level try/catch around `handleFileSelect` with `console.error` so failures surface in logs.
-- Add **drag-and-drop** to the dropzone (currently click-only).
-- Reset `<input value="">` after each pick so re-selecting the same file re-fires `onChange`.
-- Update help text from "PDF, TXT, or MD" → "PDF, DOCX, TXT, MD, CSV (max 10 MB)".
-- Show inline error message in the dialog when parsing fails (not just a toast that auto-dismisses).
+## Wave 3 — Quiz.tsx Refactor
+Split `src/pages/Quiz.tsx` into:
+- `QuizSetup.tsx` — pre-quiz configuration screen
+- `QuizPlay.tsx` — active question rendering, timer, keyboard nav
+- `QuizResults.tsx` — score, retry-mistakes, share
+- `useQuizSession.ts` (hook) — state machine, scoring, persistence
+`Quiz.tsx` becomes a thin router between phases. Preserve Study/Challenge/Exam mode logic exactly.
 
-## Phase 2 — Sitewide Bug Sweep
+## Wave 4 — UX Polish (Skeletons)
+Replace `Loader2` spinners with shadcn `Skeleton` loaders on:
+- `Dashboard.tsx` (room cards, stats grid)
+- `Room.tsx` (documents, members, activity feed)
+- `Bookmarks.tsx` (card list)
+- `Recall.tsx` (deck list)
+- `ActivityFeed.tsx`
+Keep spinners only for in-button / inline async actions.
 
-Issues spotted in audit:
+## Wave 5 — Targeted Design Polish
+- Redesign empty states for Bookmarks, Recall, Dashboard (no rooms), Room (no documents) using existing illustration components (`EmptyDeckIllustration`, `EmptyDeskIllustration`, `LostNeuronIllustration`) with clear CTAs.
+- Polish `NotFound.tsx` with `LostNeuronIllustration`, brand voice copy, and CTAs to Dashboard / Home.
+- Tighten `Auth.tsx` spacing, error states, and Google button alignment.
+- Ensure consistent page padding and section rhythm across authenticated routes.
+No changes to core flows, colors, or typography tokens — polish only within the existing Ink & Voltage system.
 
-1. **Service worker over-aggressive caching** (`public/service-worker.js`) — caches every successful GET into `synapse-dynamic-v1` including the SPA HTML, so users can see stale UI after deploys. Switch SPA navigations to network-first with no-store fallback to `/`, only cache static assets + fonts.
-2. **Index page redirect race** — even with the recent hooks fix, the `?landing=1` flow still flashes for ~1 frame. Render `null` while `loading`.
-3. **Activity feed query** (`ActivityFeed.tsx`) filters `quiz.room_id` via embedded join — Supabase ignores this filter when the FK alias resolves ambiguously. Replace with: fetch quiz IDs for the room first, then `attempts.in('quiz_id', ids)`.
-4. **Room.tsx leaderboard / fetchRoomData** is called twice on mount in some paths (after upload). Confirm and dedupe.
-5. **MobileNav** active state for `/quiz/:id` — currently no tab is active during a quiz; highlight the originating "Rooms" tab.
-6. **Profile page** "Sign out" button has no loading state — disable + spinner during signOut.
-7. **Empty bookmark/recall states** — add a "Browse rooms" CTA to dead-end empty states.
-8. **Dialog scroll lock on mobile** — Upload dialog content can overflow on 360px viewports; add `max-h-[90vh] overflow-y-auto` to `DialogContent`.
-9. **Toast duplication** — `handleUploadDocument` calls `fetchRoomData()` *and* optimistically prepends, causing a brief duplicate row. Drop the optimistic insert (refetch is fast enough) or dedupe by id.
-10. **Auth.tsx** — pressing Enter inside the username field on signup doesn't submit because the form lacks `onSubmit`; convert div to `<form>`.
+## Wave 6 — Dependency Cleanup
+- Run ripgrep to find unused shadcn/ui components in `src/components/ui/` and delete the ones with zero imports.
+- Audit `package.json` for unused Radix primitives and remove them via `bun remove`.
+- Remove any orphaned hooks/utilities surfaced by the scan.
+- Verify build after pruning.
 
-## Phase 3 — UI Polish
+## Wave 7 — Logic Optimization
+- Audit `Quiz.tsx` / `useQuizSession` hot paths: memoize question shuffling, answer validation, and timer callbacks with `useMemo`/`useCallback`.
+- Memoize Dashboard derived stats and room list mapping.
+- Convert expensive list renders to stable keys; avoid inline object/array literals in deps.
+- Add `React.memo` to leaf presentational components rendered in lists (room cards, activity items, member chips).
 
-- Add a subtle "Drop file here" highlight when dragging over the dropzone.
-- Show extracted character count + a 200-char preview before allowing Upload.
-- Replace the two stacked spinners in the Upload button (lines 637–638) with a single one.
-- Standardize the destructive-confirmation copy across Room (delete doc / delete quiz / leave room).
-- Verify all pages clear loading state on error (currently `Recall` and `Bookmarks` get stuck on a spinner if Supabase rejects).
+## Execution Rules
+- Run all waves sequentially in a single pass; do not stop to ask questions.
+- Verify after each wave: build output + targeted file reads. Fix regressions immediately.
+- Preserve all business logic, RLS, and Supabase contracts.
+- Delete freely when code is unused; keep a short kill-list in the final summary.
 
-## Files Affected
-
-| File | Change |
-|------|--------|
-| `src/pages/Room.tsx` | Upload handler, accept attr, drag-drop, dialog overflow, dedupe |
-| `src/lib/pdfParser.ts` | Add `extractTextFromDocx` helper (or new `documentParser.ts`) |
-| `package.json` | Add `mammoth` |
-| `public/service-worker.js` | Network-first for navigations |
-| `src/pages/Index.tsx` | Render null while loading |
-| `src/components/room/ActivityFeed.tsx` | Two-step query for attempts |
-| `src/components/MobileNav.tsx` | Active state for `/quiz/:id` |
-| `src/pages/Profile.tsx` | Sign-out loading state |
-| `src/pages/Bookmarks.tsx`, `src/pages/Recall.tsx` | Error-clears-loading + CTA |
-| `src/pages/Auth.tsx` | Wrap fields in `<form>` |
-
-No DB migrations, no new secrets, no breaking changes. Edge functions untouched.
+## Deliverable
+Final summary covering:
+- Files removed (with reason)
+- Files refactored (before → after structure)
+- UX changes (skeletons, empty states, NotFound, Auth)
+- Dependencies pruned
+- Perf wins (memoization, lazy boundaries)
+- Anything intentionally deferred and why
