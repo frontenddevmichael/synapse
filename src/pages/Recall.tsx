@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RotateCcw, CheckCircle, Brain } from 'lucide-react';
+import { RotateCcw, CheckCircle } from 'lucide-react';
+import { EmptyDeckIllustration } from '@/components/illustrations/EmptyDeckIllustration';
+import { Skeleton } from '@/components/ui/skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -133,8 +135,9 @@ const Recall = () => {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-background dot-grid">
-        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+      <div className="flex-1 flex flex-col items-center justify-center bg-background dot-grid p-6">
+        <Skeleton className="h-2 w-full max-w-lg mb-8" />
+        <Skeleton className="h-72 w-full max-w-lg rounded-xl" />
       </div>
     );
   }
@@ -145,7 +148,7 @@ const Recall = () => {
       <div className="flex-1 flex flex-col bg-background dot-grid pb-14 lg:pb-0">
         <main className="flex-1 flex items-center justify-center p-4">
           <motion.div variants={fadeUp} initial="hidden" animate="visible" className="text-center max-w-md">
-            <Brain className="h-16 w-16 text-muted-foreground/40 mx-auto mb-4" />
+            <EmptyDeckIllustration className="w-44 h-36 mx-auto mb-4" />
             <h2 className="text-2xl font-black tracking-tight mb-2">Nothing due today</h2>
             <p className="text-muted-foreground mb-6">Take a quiz to start building your review deck.</p>
             <Button onClick={() => navigate('/dashboard')} className="font-semibold">Back to rooms</Button>
