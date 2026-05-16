@@ -473,110 +473,19 @@ const RoomPage = () => {
                 </AlertDialog>
               )}
             {/* Upload button */}
-            <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2 font-semibold">
-                  <Upload className="h-4 w-4" />
-                  Upload
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg mx-4 sm:mx-auto max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="text-lg sm:text-xl font-bold">Upload Document</DialogTitle>
-                  <DialogDescription className="text-xs sm:text-sm">Upload a PDF or paste your study material to generate quizzes</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                  <div className="flex gap-2">
-                    <Button variant={uploadMode === 'paste' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('paste')} className="flex-1 min-h-[44px]">
-                      Paste Text
-                    </Button>
-                    <Button variant={uploadMode === 'file' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('file')} className="flex-1 min-h-[44px]">
-                      Upload File
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Document name</Label>
-                    <Input placeholder="e.g., Chapter 5 Notes" value={docName} onChange={(e) => setDocName(e.target.value)} className="h-11" />
-                  </div>
-                  {uploadMode === 'paste' ? (
-                    <div className="space-y-2">
-                      <Label>Content</Label>
-                      <Textarea placeholder="Paste your study material here..." value={docContent} onChange={(e) => setDocContent(e.target.value)} rows={6} className="sm:rows-10" />
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Label>File</Label>
-                      {!selectedFile ? (
-                        <div
-                          className={`border-2 border-dashed rounded-xl p-5 sm:p-8 text-center cursor-pointer transition-colors ${
-                            isDragging
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border hover:border-primary/50'
-                          }`}
-                          onClick={() => fileInputRef.current?.click()}
-                          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                          onDragLeave={() => setIsDragging(false)}
-                          onDrop={handleDrop}
-                        >
-                          <File className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-2 sm:mb-3 text-muted-foreground" />
-                          <p className="text-xs sm:text-sm font-medium">
-                            {isDragging ? 'Drop file here' : 'Click or drag a file to upload'}
-                          </p>
-                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
-                            PDF, DOCX, TXT, MD, or CSV — max 10 MB
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="border border-border rounded-xl p-3 sm:p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-                              <div>
-                                <p className="font-medium text-xs sm:text-sm">{selectedFile.name}</p>
-                                <p className="text-[10px] sm:text-xs text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
-                              </div>
-                            </div>
-                            <Button variant="ghost" size="icon" onClick={clearSelectedFile} disabled={isParsing} aria-label="Remove selected file" className="min-h-[44px] min-w-[44px]">
-                              {isParsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
-                            </Button>
-                          </div>
-                          {isParsing && parseProgress && (
-                            <div className="mt-3 space-y-1">
-                              <Progress value={(parseProgress.current / parseProgress.total) * 100} className="h-1.5" />
-                              <p className="text-[10px] sm:text-xs text-muted-foreground">
-                                Parsing page {parseProgress.current} of {parseProgress.total}…
-                              </p>
-                            </div>
-                          )}
-                          {isParsing && !parseProgress && (
-                            <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                              <Loader2 className="h-3 w-3 animate-spin" /> Reading file…
-                            </p>
-                          )}
-                          {docContent && !isParsing && (
-                            <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">✓ Extracted {docContent.length.toLocaleString()} characters</p>
-                          )}
-                        </div>
-                      )}
-                      {uploadError && (
-                        <p className="text-xs text-destructive mt-1">{uploadError}</p>
-                      )}
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept={SUPPORTED_ACCEPT}
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
-                    </div>
-                  )}
-                  <Button className="w-full h-11 font-semibold" onClick={handleUploadDocument} disabled={isUploading || isParsing || !docName.trim() || !docContent.trim()}>
-                    {(isParsing || isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isParsing ? 'Parsing file…' : isUploading ? 'Saving document…' : 'Upload Document'}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            {user && (
+              <UploadDocumentDialog
+                roomId={room.id}
+                userId={user.id}
+                onUploaded={(doc) => {
+                  setDocuments(prev => {
+                    const seen = new Set(prev.map(d => d.id));
+                    return seen.has(doc.id) ? prev : [doc, ...prev];
+                  });
+                  fetchRoomData();
+                }}
+              />
+            )}
             </div>
           </motion.div>
           {/* Activity Feed */}
