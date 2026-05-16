@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bookmark, Trash2, Loader2 } from 'lucide-react';
+import { Bookmark, Trash2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyDeckIllustration } from '@/components/illustrations/EmptyDeckIllustration';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -88,8 +89,16 @@ const Bookmarks = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background dot-grid">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex-1 flex flex-col bg-background dot-grid pb-14 lg:pb-0">
+        <main className="flex-1 container max-w-3xl py-6 sm:py-8 px-4 sm:px-8">
+          <div className="mb-8 space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}
+          </div>
+        </main>
       </div>
     );
   }
