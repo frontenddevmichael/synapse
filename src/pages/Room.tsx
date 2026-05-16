@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, Upload, FileText, Sparkles, Trophy, Users, Settings, Copy, Check,
-  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye, BarChart3, Hammer, Share2, QrCode, LogOut
+import {
+  Upload, FileText, Sparkles, Trophy, Users, Settings, Copy, Check,
+  Loader2, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye, BarChart3, Hammer, Share2, LogOut
 } from 'lucide-react';
 import { CardCascadeIllustration } from '@/components/illustrations/CardCascadeIllustration';
 import { DocumentFunnelIllustration } from '@/components/illustrations/DocumentFunnelIllustration';
@@ -10,11 +10,10 @@ import { ActivityFeed } from '@/components/room/ActivityFeed';
 import { DocumentPreview } from '@/components/room/DocumentPreview';
 import { PulseTab } from '@/components/room/PulseTab';
 import { ForgeTab } from '@/components/room/ForgeTab';
-import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+import { UploadDocumentDialog } from '@/components/room/UploadDocumentDialog';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Logo } from '@/components/Logo';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,14 +26,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { formatFileSize, isFileTooLarge } from '@/lib/pdfParser';
-import { parseDocument, isSupportedFile, SUPPORTED_ACCEPT } from '@/lib/documentParser';
-import { Progress } from '@/components/ui/progress';
 import { QuestionCountSelector } from '@/components/quiz/QuestionCountSelector';
 import { RoomSettings } from '@/components/room/RoomSettings';
 import { ActiveUsersIndicator } from '@/components/realtime/ActiveUsersIndicator';
@@ -93,9 +88,8 @@ const RoomPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const prefersReducedMotion = useReducedMotion();
-  
+
   const [room, setRoom] = useState<Room | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -105,21 +99,9 @@ const RoomPage = () => {
   const [copied, setCopied] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
-  
+
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
-  
-  const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [docName, setDocName] = useState('');
-  const [docContent, setDocContent] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadMode, setUploadMode] = useState<'paste' | 'file'>('paste');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isParsing, setIsParsing] = useState(false);
-  const [parseProgress, setParseProgress] = useState<{ current: number; total: number } | null>(null);
-  const [uploadStage, setUploadStage] = useState<'idle' | 'parsing' | 'saving' | 'done' | 'error'>('idle');
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<string>('');
   const [quizTitle, setQuizTitle] = useState('');
@@ -219,101 +201,6 @@ const RoomPage = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  };
-
-  const processFile = async (file: File) => {
-    setUploadError(null);
-
-    if (isFileTooLarge(file, 10)) {
-      const msg = 'Maximum file size is 10 MB.';
-      setUploadError(msg);
-      toast({ title: 'File too large', description: msg, variant: 'destructive' });
-      return;
-    }
-
-    if (!isSupportedFile(file)) {
-      const msg = `Unsupported file type. Please use PDF, DOCX, TXT, MD, or CSV.`;
-      setUploadError(msg);
-      toast({ title: 'Unsupported file', description: msg, variant: 'destructive' });
-      return;
-    }
-
-    setSelectedFile(file);
-    if (!docName) setDocName(file.name.replace(/\.[^/.]+$/, ''));
-
-    setIsParsing(true);
-    setUploadStage('parsing');
-    setParseProgress(null);
-
-    try {
-      const result = await parseDocument(file, (p) => setParseProgress(p));
-      if (!result.text.trim()) {
-        throw new Error('No text could be extracted from this file. It may be empty, image-only, or password-protected.');
-      }
-      setDocContent(result.text);
-      setUploadStage('idle');
-      toast({
-        title: 'File parsed successfully',
-        description: `Extracted ${result.charCount.toLocaleString()} characters`,
-      });
-    } catch (error) {
-      console.error('[upload] File parsing error:', error);
-      const msg = error instanceof Error ? error.message : 'Please try a different file';
-      setUploadStage('error');
-      setUploadError(msg);
-      toast({ title: 'Failed to parse file', description: msg, variant: 'destructive' });
-      setSelectedFile(null);
-    } finally {
-      setIsParsing(false);
-      setParseProgress(null);
-    }
-  };
-
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    // Reset input so re-selecting the same file re-fires onChange
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    if (!file) return;
-    await processFile(file);
-  };
-
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) await processFile(file);
-  };
-
-  const clearSelectedFile = () => {
-    setSelectedFile(null); setDocContent(''); setUploadError(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleUploadDocument = async () => {
-    if (!user || !roomId || !docName.trim() || !docContent.trim()) return;
-    setIsUploading(true);
-    setUploadStage('saving');
-    const { data: inserted, error } = await supabase.from('documents').insert({
-      room_id: roomId, uploaded_by: user.id, name: docName.trim(), content: docContent.trim(),
-    }).select().single();
-    if (error) {
-      setUploadStage('error');
-      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
-    } else {
-      setUploadStage('done');
-      // Optimistic update; refetch will reconcile + dedupe by id
-      if (inserted) {
-        setDocuments(prev => {
-          const existing = new Set(prev.map(d => d.id));
-          return existing.has((inserted as Document).id) ? prev : [inserted as Document, ...prev];
-        });
-      }
-      toast({ title: 'Document uploaded!', description: 'You can now generate quizzes from this document.' });
-      setDocName(''); setDocContent(''); setSelectedFile(null); setUploadMode('paste'); setIsUploadOpen(false);
-      setUploadStage('idle');
-      fetchRoomData();
-    }
-    setIsUploading(false);
   };
 
   const handleGenerateQuiz = async () => {
