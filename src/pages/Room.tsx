@@ -687,7 +687,10 @@ const RoomPage = () => {
                   <DocumentFunnelIllustration className="w-40 h-32 mb-4" />
                   <h3 className="font-bold text-lg mb-1">No documents yet</h3>
                   <p className="text-muted-foreground mb-4">Upload your first study material</p>
-                  <Button onClick={() => setIsUploadOpen(true)} className="gap-2">
+                  <Button
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className="gap-2"
+                  >
                     <Upload className="h-4 w-4" />
                     Upload Document
                   </Button>
