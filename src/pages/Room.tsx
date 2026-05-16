@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, Upload, FileText, Sparkles, Trophy, Users, Settings, Copy, Check,
-  File, Loader2, X, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye, BarChart3, Hammer, Share2, QrCode, LogOut
+import {
+  Upload, FileText, Sparkles, Trophy, Users, Settings, Copy, Check,
+  Loader2, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye, BarChart3, Hammer, Share2, LogOut
 } from 'lucide-react';
 import { CardCascadeIllustration } from '@/components/illustrations/CardCascadeIllustration';
 import { DocumentFunnelIllustration } from '@/components/illustrations/DocumentFunnelIllustration';
@@ -10,11 +10,10 @@ import { ActivityFeed } from '@/components/room/ActivityFeed';
 import { DocumentPreview } from '@/components/room/DocumentPreview';
 import { PulseTab } from '@/components/room/PulseTab';
 import { ForgeTab } from '@/components/room/ForgeTab';
-import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+import { UploadDocumentDialog } from '@/components/room/UploadDocumentDialog';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Logo } from '@/components/Logo';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,14 +26,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { formatFileSize, isFileTooLarge } from '@/lib/pdfParser';
-import { parseDocument, isSupportedFile, SUPPORTED_ACCEPT } from '@/lib/documentParser';
-import { Progress } from '@/components/ui/progress';
 import { QuestionCountSelector } from '@/components/quiz/QuestionCountSelector';
 import { RoomSettings } from '@/components/room/RoomSettings';
 import { ActiveUsersIndicator } from '@/components/realtime/ActiveUsersIndicator';
@@ -93,9 +88,8 @@ const RoomPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const prefersReducedMotion = useReducedMotion();
-  
+
   const [room, setRoom] = useState<Room | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -105,21 +99,9 @@ const RoomPage = () => {
   const [copied, setCopied] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
-  
+
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
-  
-  const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [docName, setDocName] = useState('');
-  const [docContent, setDocContent] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadMode, setUploadMode] = useState<'paste' | 'file'>('paste');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isParsing, setIsParsing] = useState(false);
-  const [parseProgress, setParseProgress] = useState<{ current: number; total: number } | null>(null);
-  const [uploadStage, setUploadStage] = useState<'idle' | 'parsing' | 'saving' | 'done' | 'error'>('idle');
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<string>('');
   const [quizTitle, setQuizTitle] = useState('');
@@ -219,101 +201,6 @@ const RoomPage = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  };
-
-  const processFile = async (file: File) => {
-    setUploadError(null);
-
-    if (isFileTooLarge(file, 10)) {
-      const msg = 'Maximum file size is 10 MB.';
-      setUploadError(msg);
-      toast({ title: 'File too large', description: msg, variant: 'destructive' });
-      return;
-    }
-
-    if (!isSupportedFile(file)) {
-      const msg = `Unsupported file type. Please use PDF, DOCX, TXT, MD, or CSV.`;
-      setUploadError(msg);
-      toast({ title: 'Unsupported file', description: msg, variant: 'destructive' });
-      return;
-    }
-
-    setSelectedFile(file);
-    if (!docName) setDocName(file.name.replace(/\.[^/.]+$/, ''));
-
-    setIsParsing(true);
-    setUploadStage('parsing');
-    setParseProgress(null);
-
-    try {
-      const result = await parseDocument(file, (p) => setParseProgress(p));
-      if (!result.text.trim()) {
-        throw new Error('No text could be extracted from this file. It may be empty, image-only, or password-protected.');
-      }
-      setDocContent(result.text);
-      setUploadStage('idle');
-      toast({
-        title: 'File parsed successfully',
-        description: `Extracted ${result.charCount.toLocaleString()} characters`,
-      });
-    } catch (error) {
-      console.error('[upload] File parsing error:', error);
-      const msg = error instanceof Error ? error.message : 'Please try a different file';
-      setUploadStage('error');
-      setUploadError(msg);
-      toast({ title: 'Failed to parse file', description: msg, variant: 'destructive' });
-      setSelectedFile(null);
-    } finally {
-      setIsParsing(false);
-      setParseProgress(null);
-    }
-  };
-
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    // Reset input so re-selecting the same file re-fires onChange
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    if (!file) return;
-    await processFile(file);
-  };
-
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) await processFile(file);
-  };
-
-  const clearSelectedFile = () => {
-    setSelectedFile(null); setDocContent(''); setUploadError(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleUploadDocument = async () => {
-    if (!user || !roomId || !docName.trim() || !docContent.trim()) return;
-    setIsUploading(true);
-    setUploadStage('saving');
-    const { data: inserted, error } = await supabase.from('documents').insert({
-      room_id: roomId, uploaded_by: user.id, name: docName.trim(), content: docContent.trim(),
-    }).select().single();
-    if (error) {
-      setUploadStage('error');
-      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
-    } else {
-      setUploadStage('done');
-      // Optimistic update; refetch will reconcile + dedupe by id
-      if (inserted) {
-        setDocuments(prev => {
-          const existing = new Set(prev.map(d => d.id));
-          return existing.has((inserted as Document).id) ? prev : [inserted as Document, ...prev];
-        });
-      }
-      toast({ title: 'Document uploaded!', description: 'You can now generate quizzes from this document.' });
-      setDocName(''); setDocContent(''); setSelectedFile(null); setUploadMode('paste'); setIsUploadOpen(false);
-      setUploadStage('idle');
-      fetchRoomData();
-    }
-    setIsUploading(false);
   };
 
   const handleGenerateQuiz = async () => {
@@ -586,110 +473,19 @@ const RoomPage = () => {
                 </AlertDialog>
               )}
             {/* Upload button */}
-            <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2 font-semibold">
-                  <Upload className="h-4 w-4" />
-                  Upload
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg mx-4 sm:mx-auto max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="text-lg sm:text-xl font-bold">Upload Document</DialogTitle>
-                  <DialogDescription className="text-xs sm:text-sm">Upload a PDF or paste your study material to generate quizzes</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                  <div className="flex gap-2">
-                    <Button variant={uploadMode === 'paste' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('paste')} className="flex-1 min-h-[44px]">
-                      Paste Text
-                    </Button>
-                    <Button variant={uploadMode === 'file' ? 'default' : 'outline'} size="sm" onClick={() => setUploadMode('file')} className="flex-1 min-h-[44px]">
-                      Upload File
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Document name</Label>
-                    <Input placeholder="e.g., Chapter 5 Notes" value={docName} onChange={(e) => setDocName(e.target.value)} className="h-11" />
-                  </div>
-                  {uploadMode === 'paste' ? (
-                    <div className="space-y-2">
-                      <Label>Content</Label>
-                      <Textarea placeholder="Paste your study material here..." value={docContent} onChange={(e) => setDocContent(e.target.value)} rows={6} className="sm:rows-10" />
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Label>File</Label>
-                      {!selectedFile ? (
-                        <div
-                          className={`border-2 border-dashed rounded-xl p-5 sm:p-8 text-center cursor-pointer transition-colors ${
-                            isDragging
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border hover:border-primary/50'
-                          }`}
-                          onClick={() => fileInputRef.current?.click()}
-                          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                          onDragLeave={() => setIsDragging(false)}
-                          onDrop={handleDrop}
-                        >
-                          <File className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-2 sm:mb-3 text-muted-foreground" />
-                          <p className="text-xs sm:text-sm font-medium">
-                            {isDragging ? 'Drop file here' : 'Click or drag a file to upload'}
-                          </p>
-                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
-                            PDF, DOCX, TXT, MD, or CSV — max 10 MB
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="border border-border rounded-xl p-3 sm:p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-                              <div>
-                                <p className="font-medium text-xs sm:text-sm">{selectedFile.name}</p>
-                                <p className="text-[10px] sm:text-xs text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
-                              </div>
-                            </div>
-                            <Button variant="ghost" size="icon" onClick={clearSelectedFile} disabled={isParsing} aria-label="Remove selected file" className="min-h-[44px] min-w-[44px]">
-                              {isParsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
-                            </Button>
-                          </div>
-                          {isParsing && parseProgress && (
-                            <div className="mt-3 space-y-1">
-                              <Progress value={(parseProgress.current / parseProgress.total) * 100} className="h-1.5" />
-                              <p className="text-[10px] sm:text-xs text-muted-foreground">
-                                Parsing page {parseProgress.current} of {parseProgress.total}…
-                              </p>
-                            </div>
-                          )}
-                          {isParsing && !parseProgress && (
-                            <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                              <Loader2 className="h-3 w-3 animate-spin" /> Reading file…
-                            </p>
-                          )}
-                          {docContent && !isParsing && (
-                            <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">✓ Extracted {docContent.length.toLocaleString()} characters</p>
-                          )}
-                        </div>
-                      )}
-                      {uploadError && (
-                        <p className="text-xs text-destructive mt-1">{uploadError}</p>
-                      )}
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept={SUPPORTED_ACCEPT}
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
-                    </div>
-                  )}
-                  <Button className="w-full h-11 font-semibold" onClick={handleUploadDocument} disabled={isUploading || isParsing || !docName.trim() || !docContent.trim()}>
-                    {(isParsing || isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isParsing ? 'Parsing file…' : isUploading ? 'Saving document…' : 'Upload Document'}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            {user && (
+              <UploadDocumentDialog
+                roomId={room.id}
+                userId={user.id}
+                onUploaded={(doc) => {
+                  setDocuments(prev => {
+                    const seen = new Set(prev.map(d => d.id));
+                    return seen.has(doc.id) ? prev : [doc, ...prev];
+                  });
+                  fetchRoomData();
+                }}
+              />
+            )}
             </div>
           </motion.div>
           {/* Activity Feed */}
@@ -891,7 +687,10 @@ const RoomPage = () => {
                   <DocumentFunnelIllustration className="w-40 h-32 mb-4" />
                   <h3 className="font-bold text-lg mb-1">No documents yet</h3>
                   <p className="text-muted-foreground mb-4">Upload your first study material</p>
-                  <Button onClick={() => setIsUploadOpen(true)} className="gap-2">
+                  <Button
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className="gap-2"
+                  >
                     <Upload className="h-4 w-4" />
                     Upload Document
                   </Button>
