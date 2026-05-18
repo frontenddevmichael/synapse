@@ -1,63 +1,44 @@
-# Full Audit — Waves 2 through 7
+# Continue Production Audit — Waves 2 through 7
 
-Continue the ruthless production audit, executing every remaining wave back-to-back without stopping for confirmation.
+Resume from where we left off. UploadDocumentDialog was extracted from Room.tsx. Continue the remaining work end-to-end without stopping.
 
-## Wave 2 — Room.tsx Refactor
-Split the 1100+ line `src/pages/Room.tsx` into focused components under `src/components/room/`:
-- `RoomHeader.tsx` — title, join code, member count, settings entry
-- `UploadDialog.tsx` — file input, drag/drop, parser progress, error states (extract from Room)
-- `DocumentList.tsx` — uploaded documents grid + previews
-- `QuizLauncher.tsx` — mode/question-count selectors and start CTA
-- `MembersPanel.tsx` — member list + presence
-Keep `Room.tsx` as orchestration only (data fetching + composition). Preserve all existing behavior; no API/schema changes.
+## Wave 2 (finish) — Room.tsx decomposition
+Extract from `src/pages/Room.tsx` into `src/components/room/`:
+- `RoomHeader.tsx` — title, join code, member count, settings entry, upload trigger slot
+- `DocumentList.tsx` — uploaded docs grid + preview/delete actions
+- `QuizLauncher.tsx` — mode + question count selectors + start CTA
+- `MembersPanel.tsx` — members list + presence indicators
+Keep `Room.tsx` as orchestration only (data fetching, realtime subscriptions, composition). Preserve all behavior, RLS contracts, and Supabase queries exactly.
 
-## Wave 3 — Quiz.tsx Refactor
-Split `src/pages/Quiz.tsx` into:
-- `QuizSetup.tsx` — pre-quiz configuration screen
-- `QuizPlay.tsx` — active question rendering, timer, keyboard nav
+## Wave 3 — Quiz.tsx decomposition
+Split `src/pages/Quiz.tsx`:
+- `QuizSetup.tsx` — pre-quiz config
+- `QuizPlay.tsx` — active question UI, timer, keyboard nav
 - `QuizResults.tsx` — score, retry-mistakes, share
-- `useQuizSession.ts` (hook) — state machine, scoring, persistence
-`Quiz.tsx` becomes a thin router between phases. Preserve Study/Challenge/Exam mode logic exactly.
+- `useQuizSession.ts` — state machine, scoring, persistence, active-session sync
+`Quiz.tsx` becomes a thin phase router. Study / Challenge / Exam mode logic preserved exactly.
 
-## Wave 4 — UX Polish (Skeletons)
-Replace `Loader2` spinners with shadcn `Skeleton` loaders on:
-- `Dashboard.tsx` (room cards, stats grid)
-- `Room.tsx` (documents, members, activity feed)
-- `Bookmarks.tsx` (card list)
-- `Recall.tsx` (deck list)
-- `ActivityFeed.tsx`
-Keep spinners only for in-button / inline async actions.
+## Wave 4 — Skeleton loaders (remaining surfaces)
+Replace `Loader2` page-level spinners with shadcn `Skeleton` on Dashboard, Room (docs/members/activity), and ActivityFeed. Keep spinners only for in-button async actions.
 
-## Wave 5 — Targeted Design Polish
-- Redesign empty states for Bookmarks, Recall, Dashboard (no rooms), Room (no documents) using existing illustration components (`EmptyDeckIllustration`, `EmptyDeskIllustration`, `LostNeuronIllustration`) with clear CTAs.
-- Polish `NotFound.tsx` with `LostNeuronIllustration`, brand voice copy, and CTAs to Dashboard / Home.
-- Tighten `Auth.tsx` spacing, error states, and Google button alignment.
-- Ensure consistent page padding and section rhythm across authenticated routes.
-No changes to core flows, colors, or typography tokens — polish only within the existing Ink & Voltage system.
+## Wave 5 — Targeted design polish
+- Empty states: Dashboard (no rooms), Room (no documents) using existing illustrations + clear CTAs.
+- `NotFound.tsx`: LostNeuronIllustration, brand voice, CTAs.
+- `Auth.tsx`: tighten spacing, error states, Google button alignment.
+- Normalize page padding rhythm across authenticated routes.
+No token/color/typography changes.
 
-## Wave 6 — Dependency Cleanup
-- Run ripgrep to find unused shadcn/ui components in `src/components/ui/` and delete the ones with zero imports.
-- Audit `package.json` for unused Radix primitives and remove them via `bun remove`.
-- Remove any orphaned hooks/utilities surfaced by the scan.
-- Verify build after pruning.
-
-## Wave 7 — Logic Optimization
-- Audit `Quiz.tsx` / `useQuizSession` hot paths: memoize question shuffling, answer validation, and timer callbacks with `useMemo`/`useCallback`.
+## Wave 7 — Memoization pass
+- Memoize hot paths in `useQuizSession` (shuffle, validation, timer callbacks).
 - Memoize Dashboard derived stats and room list mapping.
-- Convert expensive list renders to stable keys; avoid inline object/array literals in deps.
-- Add `React.memo` to leaf presentational components rendered in lists (room cards, activity items, member chips).
+- `React.memo` on leaf list components (room cards, activity items, member chips).
+- Stable keys, avoid inline literals in deps.
 
-## Execution Rules
-- Run all waves sequentially in a single pass; do not stop to ask questions.
-- Verify after each wave: build output + targeted file reads. Fix regressions immediately.
-- Preserve all business logic, RLS, and Supabase contracts.
-- Delete freely when code is unused; keep a short kill-list in the final summary.
+## Execution rules
+- Run all waves sequentially in a single pass; no mid-way questions.
+- Verify after each wave with targeted file reads and build output. Fix regressions immediately.
+- Preserve business logic, RLS, Supabase contracts, gamification math.
+- Delete unused code freely; track a kill-list.
 
 ## Deliverable
-Final summary covering:
-- Files removed (with reason)
-- Files refactored (before → after structure)
-- UX changes (skeletons, empty states, NotFound, Auth)
-- Dependencies pruned
-- Perf wins (memoization, lazy boundaries)
-- Anything intentionally deferred and why
+Final summary: files removed, files refactored (before → after), UX changes, perf wins, anything deferred and why.
