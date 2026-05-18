@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { QuizTimer } from '@/components/quiz/QuizTimer';
@@ -335,11 +336,19 @@ const QuizPage = () => {
 
   if (isLoading || !quiz) {
     return (
-      <div className={`min-h-screen flex items-center justify-center bg-background dot-grid ${getModeBackground()}`}>
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground font-medium">Loading quiz...</p>
-        </div>
+      <div className={`min-h-screen flex flex-col bg-background dot-grid ${getModeBackground()}`}>
+        <header className="flex items-center justify-between p-4 sm:p-6">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-8 w-24" />
+        </header>
+        <main className="flex-1 flex items-center justify-center p-4">
+          <div className="w-full max-w-md space-y-4">
+            <Skeleton className="h-8 w-3/4 mx-auto" />
+            <Skeleton className="h-4 w-1/2 mx-auto" />
+            <Skeleton className="h-48 w-full rounded-sm" />
+            <Skeleton className="h-11 w-full" />
+          </div>
+        </main>
       </div>
     );
   }

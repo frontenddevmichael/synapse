@@ -1,11 +1,13 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Home } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 import { LostNeuronIllustration } from "@/components/illustrations/LostNeuronIllustration";
 
 const NotFound = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col bg-background dot-grid">
@@ -16,11 +18,19 @@ const NotFound = () => {
         <div className="text-center max-w-sm">
           <LostNeuronIllustration className="w-48 h-40 mx-auto mb-6" />
           <h1 className="text-3xl sm:text-4xl font-black tracking-tighter mb-2">Dead end</h1>
-          <p className="text-muted-foreground mb-8">This synapse doesn't connect to anything.</p>
-          <Button onClick={() => navigate('/')} className="gap-2 font-bold uppercase tracking-wider">
-            <ArrowLeft className="h-4 w-4" />
-            Back to safety
-          </Button>
+          <p className="text-muted-foreground mb-8">
+            This synapse doesn't connect to anything. The page may have moved or never existed.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <Button onClick={() => navigate(-1)} variant="outline" className="gap-2 font-bold uppercase tracking-wider">
+              <ArrowLeft className="h-4 w-4" />
+              Go back
+            </Button>
+            <Button onClick={() => navigate(user ? '/dashboard' : '/')} className="gap-2 font-bold uppercase tracking-wider">
+              <Home className="h-4 w-4" />
+              {user ? 'Dashboard' : 'Home'}
+            </Button>
+          </div>
         </div>
       </main>
     </div>

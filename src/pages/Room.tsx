@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -338,13 +339,23 @@ const RoomPage = () => {
 
   if (isLoading || !room) {
     return (
-      <div className="flex-1 flex flex-col bg-background dot-grid">
-        <div className="flex-1 flex items-center justify-center">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-muted-foreground font-medium">Loading room...</p>
-          </motion.div>
+      <div className="flex-1 flex flex-col bg-background dot-grid pb-14 lg:pb-0">
+        <div className="border-b border-border/30 bg-card/30 backdrop-blur-sm">
+          <div className="container max-w-6xl px-3 sm:px-8 py-5 sm:py-8 space-y-3">
+            <Skeleton className="h-8 sm:h-10 w-2/3 max-w-md" />
+            <div className="flex gap-2">
+              <Skeleton className="h-9 w-28" />
+              <Skeleton className="h-9 w-20" />
+              <Skeleton className="h-9 w-16" />
+            </div>
+          </div>
         </div>
+        <main className="flex-1 container max-w-6xl py-6 sm:py-8 px-3 sm:px-8 space-y-6">
+          <Skeleton className="h-11 w-full sm:w-96" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-36 rounded-xl" />)}
+          </div>
+        </main>
       </div>
     );
   }
