@@ -1,13 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, CheckCircle, XCircle, Loader2, AlertTriangle, Lock, Star, Zap, Bookmark, BookmarkCheck, Share2 } from 'lucide-react';
+import { Loader2, Bookmark, BookmarkCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Logo } from '@/components/Logo';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,12 +18,10 @@ import { useActiveSession } from '@/hooks/useActiveSession';
 import { AchievementToast } from '@/components/gamification/AchievementToast';
 import { LevelUpOverlay } from '@/components/gamification/LevelUpOverlay';
 import { TypewriterText } from '@/components/quiz/TypewriterText';
-import { AnimatedScore } from '@/components/quiz/AnimatedScore';
-import { RetryMistakesButton } from '@/components/quiz/RetryMistakesButton';
-import { PersonalBest } from '@/components/quiz/PersonalBest';
+import { QuizIntro } from '@/components/quiz/QuizIntro';
+import { QuizResults } from '@/components/quiz/QuizResults';
 import { useConfetti } from '@/hooks/useConfetti';
 import { useKeyboardNav } from '@/hooks/useKeyboardNav';
-import { fadeUp, stagger } from '@/lib/motion';
 
 interface Quiz {
   id: string;
