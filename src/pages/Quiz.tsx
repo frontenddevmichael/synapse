@@ -351,173 +351,45 @@ const QuizPage = () => {
 
   // Quiz intro screen
   if (!attempt || attempt.status === 'not_started') {
-    const isExamBlocked = roomMode === 'exam' && hasCompletedAttempt;
     return (
-      <div className={`min-h-screen flex flex-col bg-background dot-grid ${getModeBackground()}`}>
-        <header className="flex items-center justify-between p-4 sm:p-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" aria-label="Go back" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4" /></Button>
-            <Logo />
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className={`${roomMode === 'study' ? 'mode-study' : roomMode === 'challenge' ? 'mode-challenge' : 'mode-exam'} font-semibold`}>
-              {roomMode} mode
-            </Badge>
-            <ThemeToggle />
-          </div>
-        </header>
-        <main className="flex-1 flex items-center justify-center p-4">
-          <motion.div variants={stagger} initial="hidden" animate="visible" className="w-full max-w-md">
-            <motion.div variants={fadeUp} className="rounded-sm border border-border/50 bg-card p-8 shadow-lg text-center">
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">{quiz.title}</h1>
-              {quiz.description && <p className="text-muted-foreground mb-6">{quiz.description}</p>}
-              <div className="flex flex-wrap justify-center gap-2 mb-6">
-                <Badge className={`${quiz.difficulty === 'easy' ? 'bg-success/10 text-success' : quiz.difficulty === 'medium' ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'}`}>{quiz.difficulty}</Badge>
-                <Badge variant="outline">{questions.length} question{questions.length !== 1 ? 's' : ''}</Badge>
-                {effectiveTimeLimit && <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" />{effectiveTimeLimit} min</Badge>}
-              </div>
-              
-              {/* Keyboard hint */}
-              <div className="hidden sm:flex items-center justify-center gap-2 mb-4 text-xs text-muted-foreground">
-                <kbd className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono text-[10px]">A-D</kbd>
-                <span>to answer</span>
-                <kbd className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono text-[10px]">←→</kbd>
-                <span>to navigate</span>
-              </div>
-              
-              <div className={`p-4 rounded-xl border border-border/30 mb-6 ${getModeBackground()}`}>
-                <p className={`text-sm font-medium ${getModeAccentColor()}`}>
-                  {roomMode === 'study' ? 'Answers revealed after each question' : roomMode === 'challenge' ? 'Timed quiz with leaderboard' : 'Single attempt, no review'}
-                </p>
-              </div>
-              {isExamBlocked ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive">
-                    <Lock className="h-5 w-5" />
-                    <div className="text-left"><p className="font-bold">Already completed</p><p className="text-sm opacity-80">Exam mode allows one attempt</p></div>
-                  </div>
-                  <Button variant="outline" className="w-full" onClick={() => navigate(-1)}>Back to Room</Button>
-                </div>
-              ) : (
-                <Button className="w-full h-12 text-base font-bold" size="lg" onClick={startQuiz}>Start Quiz</Button>
-              )}
-            </motion.div>
-          </motion.div>
-        </main>
-      </div>
+      <QuizIntro
+        title={quiz.title}
+        description={quiz.description}
+        difficulty={quiz.difficulty}
+        questionCount={questions.length}
+        effectiveTimeLimit={effectiveTimeLimit}
+        roomMode={roomMode}
+        isExamBlocked={roomMode === 'exam' && hasCompletedAttempt}
+        modeBackground={getModeBackground()}
+        modeAccentColor={getModeAccentColor()}
+        onStart={startQuiz}
+      />
     );
   }
 
   // Results screen
   if (showResults && attempt.status === 'completed') {
-    const correctCount = questions.filter(q => answers[q.id] === q.correct_answer).length;
-    const incorrectCount = questions.length - correctCount;
-    const score = attempt.score || 0;
-    const isNewBest = previousBestScore !== null && score >= previousBestScore;
-
     return (
-      <div className={`min-h-screen flex flex-col bg-background dot-grid ${getModeBackground()}`}>
+      <>
         <LevelUpOverlay level={newLevel || 1} show={leveledUp} onClose={() => setLeveledUp(false)} />
         {newAchievement && <AchievementToast name={newAchievement.name} description={newAchievement.description} icon={newAchievement.icon} xpReward={newAchievement.xp_reward} onClose={clearNewAchievement} />}
-        <header className="flex items-center justify-between p-4 sm:p-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" aria-label="Go back" onClick={() => navigate(-1)} className="min-h-[44px] min-w-[44px]"><ArrowLeft className="h-4 w-4" /></Button>
-            <Logo />
-          </div>
-          <ThemeToggle />
-        </header>
-        <main className="flex-1 container max-w-3xl py-6 sm:py-8 px-4">
-          <motion.div variants={stagger} initial="hidden" animate="visible">
-            <motion.div variants={fadeUp} className="rounded-sm border border-border/50 bg-card p-6 sm:p-8 lg:p-12 mb-6 sm:mb-8 text-center shadow-lg">
-              <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3 sm:mb-4">Quiz Complete</p>
-              <div className="text-6xl sm:text-7xl lg:text-8xl font-black tracking-tighter mb-3 sm:mb-4 text-electric">
-                <AnimatedScore score={score} />
-              </div>
-              <p className="text-base sm:text-lg text-muted-foreground mb-2">{correctCount} out of {questions.length} correct</p>
-              
-              {/* Personal best indicator */}
-              <div className="flex justify-center mb-4">
-                <PersonalBest
-                  currentScore={score}
-                  previousBest={previousBestScore}
-                  isNewBest={isNewBest}
-                />
-              </div>
-              
-              {xpEarned !== null && (
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mb-6">
-                  <div className="flex items-center gap-2 text-primary font-bold animate-count-up">
-                    <Zap className="h-5 w-5" />
-                    +{xpEarned} XP
-                  </div>
-                  {leveledUp && newLevel && (
-                    <div className="flex items-center gap-2 text-gold font-bold animate-count-up gold-shimmer">
-                      <Star className="h-5 w-5" />
-                      Level {newLevel}!
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* Action buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6 sm:mt-8">
-                <Button onClick={() => navigate(-1)} className="h-11 px-8 font-semibold w-full sm:w-auto">Back to Room</Button>
-                <RetryMistakesButton incorrectCount={incorrectCount} onClick={handleRetryMistakes} />
-                <Button variant="ghost" size="sm" onClick={handleShareScore} className="gap-2 text-muted-foreground">
-                  <Share2 className="h-4 w-4" />
-                  Share
-                </Button>
-              </div>
-            </motion.div>
-
-            {shouldShowAnswerReview && (
-              <motion.div variants={fadeUp} className="space-y-4">
-                <h2 className="text-xl sm:text-2xl font-black tracking-tight">Review</h2>
-                {questions.map((question, index) => {
-                  const userAnswer = answers[question.id];
-                  const isCorrect = userAnswer === question.correct_answer;
-                  return (
-                    <div key={question.id} className="rounded-sm border border-border/50 bg-card p-4 sm:p-6">
-                      <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
-                        {isCorrect ? <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-success flex-shrink-0 mt-0.5" /> : <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-destructive flex-shrink-0 mt-0.5" />}
-                        <p className="font-serif text-base sm:text-lg">{index + 1}. {question.question_text}</p>
-                      </div>
-                      <div className="space-y-2 sm:ml-10">
-                        {question.options.map((option) => (
-                          <div key={option} className={cn('p-2.5 sm:p-3 rounded-lg border transition-all text-sm',
-                            option === question.correct_answer && 'bg-success/10 border-success/30',
-                            option === userAnswer && option !== question.correct_answer && 'bg-destructive/10 border-destructive/30',
-                            option !== userAnswer && option !== question.correct_answer && 'border-border/30'
-                          )}>
-                            {option}
-                            {option === question.correct_answer && <span className="ml-2 text-success text-xs sm:text-sm font-medium">(Correct)</span>}
-                            {option === userAnswer && option !== question.correct_answer && <span className="ml-2 text-destructive text-xs sm:text-sm font-medium">(Your answer)</span>}
-                          </div>
-                        ))}
-                        {question.explanation && (
-                          <div className="mt-2 sm:mt-3 p-3 sm:p-4 bg-muted/50 rounded-lg sm:rounded-xl text-xs sm:text-sm text-muted-foreground">
-                            <span className="font-bold text-foreground">Explanation: </span>{question.explanation}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </motion.div>
-            )}
-
-            {!shouldShowAnswerReview && (
-              <motion.div variants={fadeUp} className="rounded-sm border border-border/50 bg-card p-8 sm:p-12 text-center">
-                <Lock className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50 mx-auto mb-4" />
-                <h3 className="font-bold text-lg mb-2">Review Hidden</h3>
-                <p className="text-muted-foreground text-sm">Exam mode does not allow answer review.</p>
-              </motion.div>
-            )}
-          </motion.div>
-        </main>
-      </div>
+        <QuizResults
+          score={attempt.score || 0}
+          questions={questions}
+          answers={answers}
+          previousBestScore={previousBestScore}
+          xpEarned={xpEarned}
+          leveledUp={leveledUp}
+          newLevel={newLevel}
+          shouldShowAnswerReview={shouldShowAnswerReview}
+          modeBackground={getModeBackground()}
+          onRetryMistakes={handleRetryMistakes}
+          onShareScore={handleShareScore}
+        />
+      </>
     );
   }
+
 
   // Quiz in progress — fullscreen focus
   return (
