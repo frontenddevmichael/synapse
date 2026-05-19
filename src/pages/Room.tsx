@@ -1,16 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Upload, FileText, Sparkles, Trophy, Users, Settings, Copy, Check,
-  Loader2, Trash2, BookOpen, Timer, Crown, Medal, Award, Eye, BarChart3, Hammer, Share2, LogOut
+  FileText, Sparkles, Trophy, Users, Settings, Copy, Check,
+  BookOpen, Timer, BarChart3, Hammer, LogOut, Upload,
 } from 'lucide-react';
 import { CardCascadeIllustration } from '@/components/illustrations/CardCascadeIllustration';
 import { DocumentFunnelIllustration } from '@/components/illustrations/DocumentFunnelIllustration';
 import { ActivityFeed } from '@/components/room/ActivityFeed';
-import { DocumentPreview } from '@/components/room/DocumentPreview';
 import { PulseTab } from '@/components/room/PulseTab';
 import { ForgeTab } from '@/components/room/ForgeTab';
 import { UploadDocumentDialog } from '@/components/room/UploadDocumentDialog';
+import { ShareRoomDialog } from '@/components/room/ShareRoomDialog';
+import { QuizLauncher } from '@/components/room/QuizLauncher';
+import { QuizCard } from '@/components/room/QuizCard';
+import { DocumentCard } from '@/components/room/DocumentCard';
+import { MemberCard } from '@/components/room/MemberCard';
+import { LeaderboardPanel, type LeaderboardEntry } from '@/components/room/LeaderboardPanel';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,20 +23,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
-} from '@/components/ui/dialog';
-import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { QuestionCountSelector } from '@/components/quiz/QuestionCountSelector';
 import { RoomSettings } from '@/components/room/RoomSettings';
 import { ActiveUsersIndicator } from '@/components/realtime/ActiveUsersIndicator';
 import { QuizGeneratingOverlay } from '@/components/quiz/QuizGeneratingOverlay';
@@ -72,13 +68,6 @@ interface Member {
   };
 }
 
-interface LeaderboardEntry {
-  user_id: string;
-  username: string;
-  total_score: number;
-  quizzes_taken: number;
-}
-
 interface UserPreferences {
   preferred_difficulty: 'easy' | 'medium' | 'hard';
   default_time_limit: number;
@@ -98,8 +87,6 @@ const RoomPage = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [isShareOpen, setIsShareOpen] = useState(false);
-  const [shareLinkCopied, setShareLinkCopied] = useState(false);
 
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
 
@@ -112,6 +99,7 @@ const RoomPage = () => {
   useEffect(() => {
     if (!user) return;
     if (roomId) { fetchRoomData(); fetchUserPreferences(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, roomId]);
 
   const fetchUserPreferences = async () => {
@@ -172,7 +160,6 @@ const RoomPage = () => {
         const scoreMap: Record<string, { weighted: number; count: number }> = {};
         attemptsData.forEach((attempt: any) => {
           if (!scoreMap[attempt.user_id]) scoreMap[attempt.user_id] = { weighted: 0, count: 0 };
-          // Weight by difficulty: easy=1, medium=1.5, hard=2
           const diffWeight = attempt.quiz?.difficulty === 'hard' ? 2 : attempt.quiz?.difficulty === 'medium' ? 1.5 : 1;
           scoreMap[attempt.user_id].weighted += (attempt.score || 0) * diffWeight;
           scoreMap[attempt.user_id].count += 1;
@@ -196,13 +183,13 @@ const RoomPage = () => {
     setIsLoading(false);
   };
 
-  const handleCopyCode = () => {
+  const handleCopyCode = useCallback(() => {
     if (room) {
       navigator.clipboard.writeText(room.code);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  };
+  }, [room]);
 
   const handleGenerateQuiz = async () => {
     if (!user || !roomId || !selectedDoc || !quizTitle.trim()) return;
@@ -238,17 +225,13 @@ const RoomPage = () => {
         throw new Error('Failed to save questions');
       }
 
-      // Phase 5 — Forge: also insert approved user_questions into this quiz
+      // Forge: also insert approved user_questions into this quiz
       let forgeCount = 0;
       try {
         const { data: approvedUQ } = await supabase
-          .from('user_questions')
-          .select('*')
-          .eq('room_id', roomId)
-          .eq('status', 'approved');
+          .from('user_questions').select('*').eq('room_id', roomId).eq('status', 'approved');
 
         if (approvedUQ && approvedUQ.length > 0) {
-          // Check which questions are already in this quiz (by question_text to avoid duplicates)
           const existingTexts = new Set(questionsToInsert.map((q: any) => q.question_text));
           const newForgeQuestions = approvedUQ
             .filter((uq: any) => !existingTexts.has(uq.question_text))
@@ -257,12 +240,8 @@ const RoomPage = () => {
                 ? JSON.stringify(['True', 'False'])
                 : JSON.stringify([uq.option_a, uq.option_b, uq.option_c, uq.option_d].filter(Boolean));
               return {
-                quiz_id: quiz.id,
-                question_text: uq.question_text,
-                question_type: uq.question_type,
-                options,
-                correct_answer: uq.correct_answer,
-                explanation: null,
+                quiz_id: quiz.id, question_text: uq.question_text, question_type: uq.question_type,
+                options, correct_answer: uq.correct_answer, explanation: null,
                 order_index: questionsToInsert.length + idx,
               };
             });
@@ -283,18 +262,20 @@ const RoomPage = () => {
     } finally { setIsGenerating(false); }
   };
 
-  const handleDeleteDocument = async (docId: string) => {
+  const handleDeleteDocument = useCallback(async (docId: string) => {
     const { error } = await supabase.from('documents').delete().eq('id', docId);
     if (error) toast({ title: 'Failed to delete document', description: error.message, variant: 'destructive' });
     else { toast({ title: 'Document deleted' }); fetchRoomData(); }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toast]);
 
-  const handleDeleteQuiz = async (quizId: string) => {
+  const handleDeleteQuiz = useCallback(async (quizId: string) => {
     await supabase.from('questions').delete().eq('quiz_id', quizId);
     const { error } = await supabase.from('quizzes').delete().eq('id', quizId);
     if (error) toast({ title: 'Failed to delete quiz', description: error.message, variant: 'destructive' });
     else { toast({ title: 'Quiz deleted' }); fetchRoomData(); }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toast]);
 
   const handleLeaveRoom = async () => {
     if (!user || !roomId) return;
@@ -307,32 +288,21 @@ const RoomPage = () => {
     }
   };
 
-  const getModeIcon = (mode: string) => {
-    switch (mode) {
-      case 'study': return <BookOpen className="h-4 w-4" />;
-      case 'challenge': return <Trophy className="h-4 w-4" />;
-      case 'exam': return <Timer className="h-4 w-4" />;
-      default: return null;
-    }
-  };
+  const handleUploaded = useCallback((doc: Document) => {
+    setDocuments(prev => {
+      const seen = new Set(prev.map(d => d.id));
+      return seen.has(doc.id) ? prev : [doc, ...prev];
+    });
+    fetchRoomData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const getModeLabel = (mode: string) => {
-    switch (mode) {
-      case 'study': return 'Study Mode';
-      case 'challenge': return 'Challenge Mode';
-      case 'exam': return 'Exam Mode';
-      default: return mode;
-    }
-  };
-
-  const getDifficultyClass = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return 'bg-success/10 text-success border-success/20';
-      case 'medium': return 'bg-warning/10 text-warning border-warning/20';
-      case 'hard': return 'bg-destructive/10 text-destructive border-destructive/20';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
+  const modeBadge = useMemo(() => {
+    if (!room) return null;
+    const icon = room.mode === 'study' ? <BookOpen className="h-4 w-4" /> : room.mode === 'challenge' ? <Trophy className="h-4 w-4" /> : <Timer className="h-4 w-4" />;
+    const label = room.mode === 'study' ? 'Study Mode' : room.mode === 'challenge' ? 'Challenge Mode' : 'Exam Mode';
+    return { icon, label };
+  }, [room]);
 
   const containerProps = prefersReducedMotion ? {} : { variants: staggerFast, initial: 'hidden', animate: 'visible' };
   const itemProps = prefersReducedMotion ? {} : { variants: fadeUp };
@@ -361,27 +331,24 @@ const RoomPage = () => {
   }
 
   const modeBgClass = room.mode === 'study' ? 'mode-bg-study' : room.mode === 'challenge' ? 'mode-bg-challenge' : 'mode-bg-exam';
+  const isOwner = user?.id === room.owner_id;
 
   return (
     <div className="flex-1 flex flex-col bg-background dot-grid pb-14 lg:pb-0">
-      {/* Mode-specific ambient background */}
       <div className={`fixed inset-0 -z-10 ${modeBgClass}`} />
 
-      {/* Mobile-only mode badge strip (header is provided by AuthenticatedLayout) */}
       <div className="flex items-center justify-end px-3 sm:px-8 py-2 border-b border-border/30 bg-background/40 backdrop-blur-sm lg:hidden">
         <Badge variant="outline" className={`mode-${room.mode} gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 font-semibold text-[10px] sm:text-xs`}>
-          {getModeIcon(room.mode)}
-          {getModeLabel(room.mode)}
+          {modeBadge?.icon}
+          {modeBadge?.label}
         </Badge>
       </div>
 
-      {/* Room Hero — two-line on mobile */}
+      {/* Room Hero */}
       <motion.div {...containerProps} className="border-b border-border/30 bg-card/30 backdrop-blur-sm">
         <div className="container max-w-6xl px-3 sm:px-8 py-5 sm:py-8">
           <motion.div {...itemProps}>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter mb-2">
-              {room.name}
-            </h1>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter mb-2">{room.name}</h1>
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap mb-3 sm:mb-0">
               <button
                 onClick={handleCopyCode}
@@ -390,65 +357,7 @@ const RoomPage = () => {
                 {room.code}
                 {copied ? <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-success" /> : <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
               </button>
-              {/* Share button */}
-              <Dialog open={isShareOpen} onOpenChange={setIsShareOpen}>
-                <DialogTrigger asChild>
-                  <button className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors text-xs sm:text-sm text-primary font-medium min-h-[36px]">
-                    <Share2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                    Share
-                  </button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md mx-4 sm:mx-auto">
-                  <DialogHeader>
-                    <DialogTitle className="text-lg font-bold">Share this room</DialogTitle>
-                    <DialogDescription>Anyone with the link or QR code can join</DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-5 pt-2">
-                    {/* QR Code */}
-                    <div className="flex justify-center">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${window.location.origin}/join/${room.code}`)}`}
-                        alt="Room QR code"
-                        className="w-48 h-48 rounded-xl border border-border p-2 bg-white"
-                      />
-                    </div>
-                    {/* Room code */}
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground mb-1">Room code</p>
-                      <p className="text-2xl font-mono font-bold tracking-[0.3em]">{room.code}</p>
-                    </div>
-                    {/* Copy link */}
-                    <Button
-                      variant="outline"
-                      className="w-full h-11 font-semibold gap-2"
-                      onClick={() => {
-                        navigator.clipboard.writeText(`${window.location.origin}/join/${room.code}`);
-                        setShareLinkCopied(true);
-                        setTimeout(() => setShareLinkCopied(false), 2000);
-                      }}
-                    >
-                      {shareLinkCopied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
-                      {shareLinkCopied ? 'Copied!' : 'Copy invite link'}
-                    </Button>
-                    {/* Native share if available */}
-                    {typeof navigator.share === 'function' && (
-                      <Button
-                        className="w-full h-11 font-semibold gap-2"
-                        onClick={() => {
-                          navigator.share({
-                            title: `Join ${room.name} on Synapse`,
-                            text: `Use code ${room.code} or click the link to join:`,
-                            url: `${window.location.origin}/join/${room.code}`,
-                          }).catch(() => {});
-                        }}
-                      >
-                        <Share2 className="h-4 w-4" />
-                        Share via…
-                      </Button>
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <ShareRoomDialog roomName={room.name} roomCode={room.code} />
               <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
                 <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 {members.length}
@@ -462,8 +371,7 @@ const RoomPage = () => {
               </span>
             </div>
             <div className="flex items-center gap-2 mt-3 sm:mt-0 sm:absolute sm:right-8 sm:top-8">
-              {/* Leave Room — only for non-owners */}
-              {user?.id !== room.owner_id && (
+              {!isOwner && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline" size="sm" className="gap-1.5 text-muted-foreground hover:text-destructive hover:border-destructive/50">
@@ -483,23 +391,11 @@ const RoomPage = () => {
                   </AlertDialogContent>
                 </AlertDialog>
               )}
-            {/* Upload button */}
-            {user && (
-              <UploadDocumentDialog
-                roomId={room.id}
-                userId={user.id}
-                onUploaded={(doc) => {
-                  setDocuments(prev => {
-                    const seen = new Set(prev.map(d => d.id));
-                    return seen.has(doc.id) ? prev : [doc, ...prev];
-                  });
-                  fetchRoomData();
-                }}
-              />
-            )}
+              {user && (
+                <UploadDocumentDialog roomId={room.id} userId={user.id} onUploaded={handleUploaded} />
+              )}
             </div>
           </motion.div>
-          {/* Activity Feed */}
           <div className="container max-w-6xl px-3 sm:px-8 pb-4">
             <ActivityFeed roomId={room.id} />
           </div>
@@ -511,7 +407,6 @@ const RoomPage = () => {
         <motion.div {...containerProps}>
           <Tabs defaultValue="quizzes" className="space-y-6 sm:space-y-8">
             <motion.div {...itemProps}>
-              {/* Scrollable tabs on mobile */}
               <TabsList className="bg-muted/50 backdrop-blur-sm overflow-x-auto whitespace-nowrap w-full sm:w-auto flex sm:inline-flex">
                 <TabsTrigger value="quizzes" className="gap-1.5 sm:gap-2 font-semibold min-h-[44px] text-xs sm:text-sm flex-1 sm:flex-none">
                   <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -534,19 +429,17 @@ const RoomPage = () => {
                     <span className="sm:hidden">Rank</span>
                   </TabsTrigger>
                 )}
-                {user?.id === room.owner_id && (
+                {isOwner && (
                   <TabsTrigger value="pulse" className="gap-1.5 sm:gap-2 font-semibold min-h-[44px] text-xs sm:text-sm flex-1 sm:flex-none">
                     <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">Pulse</span>
-                    <span className="sm:hidden">Pulse</span>
+                    Pulse
                   </TabsTrigger>
                 )}
                 <TabsTrigger value="forge" className="gap-1.5 sm:gap-2 font-semibold min-h-[44px] text-xs sm:text-sm flex-1 sm:flex-none">
                   <Hammer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Forge</span>
-                  <span className="sm:hidden">Forge</span>
+                  Forge
                 </TabsTrigger>
-                {user?.id === room.owner_id && (
+                {isOwner && (
                   <TabsTrigger value="settings" className="gap-1.5 sm:gap-2 font-semibold min-h-[44px] text-xs sm:text-sm flex-1 sm:flex-none">
                     <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </TabsTrigger>
@@ -556,7 +449,6 @@ const RoomPage = () => {
 
             {/* Quizzes Tab */}
             <TabsContent value="quizzes" className="space-y-6">
-              {/* Quiz Generator */}
               {isGenerating && (
                 <motion.div {...itemProps}>
                   <QuizGeneratingOverlay
@@ -569,58 +461,24 @@ const RoomPage = () => {
               )}
 
               {documents.length > 0 && !isGenerating && (
-                <motion.div {...itemProps} className="bento-card">
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="p-2.5 rounded-xl bg-primary/10">
-                      <Sparkles className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg">Generate Quiz</h3>
-                      <p className="text-sm text-muted-foreground">Create AI-powered questions from your documents</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Document</Label>
-                      <Select value={selectedDoc} onValueChange={setSelectedDoc}>
-                        <SelectTrigger className="h-11"><SelectValue placeholder="Select document" /></SelectTrigger>
-                        <SelectContent>
-                          {documents.map((doc) => (<SelectItem key={doc.id} value={doc.id}>{doc.name}</SelectItem>))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Quiz title</Label>
-                      <Input placeholder="e.g., Chapter 5 Quiz" value={quizTitle} onChange={(e) => setQuizTitle(e.target.value)} className="h-11" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Difficulty</Label>
-                      <Select value={quizDifficulty} onValueChange={(v) => setQuizDifficulty(v as any)}>
-                        <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="easy">Easy</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="hard">Hard</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {userPreferences && quizDifficulty !== userPreferences.preferred_difficulty && (
-                        <p className="text-2xs text-muted-foreground">Your default: {userPreferences.preferred_difficulty}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <QuestionCountSelector value={questionCount} onChange={setQuestionCount} min={5} max={25} />
-                    </div>
-                    <div className="flex items-end">
-                      <Button className="w-full h-11 gap-2 font-semibold" onClick={handleGenerateQuiz} disabled={isGenerating || !selectedDoc || !quizTitle.trim()}>
-                        {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                        Generate
-                      </Button>
-                    </div>
-                  </div>
+                <motion.div {...itemProps}>
+                  <QuizLauncher
+                    documents={documents}
+                    selectedDoc={selectedDoc}
+                    onSelectDoc={setSelectedDoc}
+                    title={quizTitle}
+                    onTitleChange={setQuizTitle}
+                    difficulty={quizDifficulty}
+                    onDifficultyChange={setQuizDifficulty}
+                    preferredDifficulty={userPreferences?.preferred_difficulty}
+                    questionCount={questionCount}
+                    onQuestionCountChange={setQuestionCount}
+                    isGenerating={isGenerating}
+                    onGenerate={handleGenerateQuiz}
+                  />
                 </motion.div>
               )}
 
-              {/* Quiz Grid */}
               {quizzes.length === 0 ? (
                 <motion.div {...itemProps} className="bento-card py-16 flex flex-col items-center text-center">
                   <CardCascadeIllustration className="w-40 h-32 mb-4" />
@@ -630,62 +488,18 @@ const RoomPage = () => {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {quizzes.map((quiz, index) => (
-                    <motion.div key={quiz.id} {...itemProps} transition={{ delay: index * 0.05 }}>
-                      <div
-                        className="bento-card cursor-pointer group hover:shadow-lg relative"
-                        onClick={() => navigate(`/quiz/${quiz.id}`)}
-                      >
-                        {/* Mode tint strip */}
-                        <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-xl ${
-                          room.mode === 'study' ? 'bg-mode-study' :
-                          room.mode === 'challenge' ? 'bg-mode-challenge' : 'bg-mode-exam'
-                        }`} />
-
-                        <div className="flex items-start justify-between gap-3 mt-2">
-                          <div className="min-w-0 flex-1">
-                            <h3 className="font-bold text-lg truncate group-hover:text-primary transition-colors">
-                              {quiz.title}
-                            </h3>
-                            {quiz.description && (
-                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{quiz.description}</p>
-                            )}
-                            <div className="flex items-center gap-2 mt-3">
-                              <Badge variant="outline" className={`${getDifficultyClass(quiz.difficulty)} text-xs`}>
-                                {quiz.difficulty}
-                              </Badge>
-                              {quiz.time_limit_minutes && (
-                                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <Timer className="h-3 w-3" />
-                                  {quiz.time_limit_minutes}m
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          {user?.id === room.owner_id && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon"
-                                  aria-label={`Delete quiz ${quiz.title}`}
-                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                                  onClick={(e) => e.stopPropagation()}>
-                                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete quiz?</AlertDialogTitle>
-                                  <AlertDialogDescription>This will permanently delete "{quiz.title}" and all its questions.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteQuiz(quiz.id)}>Delete</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
+                    <QuizCard
+                      key={quiz.id}
+                      id={quiz.id}
+                      title={quiz.title}
+                      description={quiz.description}
+                      difficulty={quiz.difficulty}
+                      timeLimitMinutes={quiz.time_limit_minutes}
+                      mode={room.mode}
+                      canDelete={isOwner}
+                      delay={index * 0.05}
+                      onDelete={handleDeleteQuiz}
+                    />
                   ))}
                 </div>
               )}
@@ -698,10 +512,7 @@ const RoomPage = () => {
                   <DocumentFunnelIllustration className="w-40 h-32 mb-4" />
                   <h3 className="font-bold text-lg mb-1">No documents yet</h3>
                   <p className="text-muted-foreground mb-4">Upload your first study material</p>
-                  <Button
-                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                    className="gap-2"
-                  >
+                  <Button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="gap-2">
                     <Upload className="h-4 w-4" />
                     Upload Document
                   </Button>
@@ -709,43 +520,16 @@ const RoomPage = () => {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {documents.map((doc, index) => (
-                    <motion.div key={doc.id} {...itemProps} transition={{ delay: index * 0.05 }}>
-                      <div className="bento-card group relative">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-                              <FileText className="h-5 w-5 text-primary" />
-                            </div>
-                            <div className="min-w-0">
-                              <h3 className="font-bold truncate">{doc.name}</h3>
-                              <div className="flex items-center gap-2">
-                                <p className="text-xs text-muted-foreground">{new Date(doc.created_at).toLocaleDateString()}</p>
-                                {doc.content && <DocumentPreview name={doc.name} content={doc.content} />}
-                              </div>
-                            </div>
-                          </div>
-                          {user?.id === room.owner_id && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" aria-label={`Delete document ${doc.name}`} className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete document?</AlertDialogTitle>
-                                  <AlertDialogDescription>This will permanently delete "{doc.name}".</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteDocument(doc.id)}>Delete</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
+                    <DocumentCard
+                      key={doc.id}
+                      id={doc.id}
+                      name={doc.name}
+                      content={doc.content}
+                      createdAt={doc.created_at}
+                      canDelete={isOwner}
+                      delay={index * 0.05}
+                      onDelete={handleDeleteDocument}
+                    />
                   ))}
                 </div>
               )}
@@ -755,151 +539,26 @@ const RoomPage = () => {
             <TabsContent value="members" className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {members.map((member, index) => (
-                  <motion.div key={member.id} {...itemProps} transition={{ delay: index * 0.05 }}>
-                    <div className="bento-card">
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                          <span className="text-primary font-bold text-lg">
-                            {member.profile.username.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold truncate">{member.profile.display_name || member.profile.username}</p>
-                          <p className="text-sm text-muted-foreground">@{member.profile.username}</p>
-                        </div>
-                        <Badge variant="outline" className={member.role === 'owner' ? 'border-gold/30 text-gold bg-gold/10' : ''}>
-                          {member.role === 'owner' && <Crown className="h-3 w-3 mr-1" />}
-                          {member.role}
-                        </Badge>
-                      </div>
-                    </div>
-                  </motion.div>
+                  <MemberCard
+                    key={member.id}
+                    username={member.profile.username}
+                    displayName={member.profile.display_name}
+                    role={member.role}
+                    delay={index * 0.05}
+                  />
                 ))}
               </div>
             </TabsContent>
 
-            {/* Leaderboard Tab — Cinematic podium */}
+            {/* Leaderboard Tab */}
             {room.leaderboard_enabled && (
               <TabsContent value="leaderboard" className="space-y-6">
-                {leaderboard.length === 0 ? (
-                  <motion.div {...itemProps} className="bento-card py-16 flex flex-col items-center text-center">
-                    <Trophy className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <h3 className="font-bold text-lg mb-1">No scores yet</h3>
-                    <p className="text-muted-foreground">Complete quizzes to appear on the leaderboard</p>
-                  </motion.div>
-                ) : (
-                  <>
-                    {/* Top 3 Podium */}
-                    {leaderboard.length >= 1 && (
-                      <motion.div {...itemProps} className="hidden sm:grid grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
-                        {/* 2nd Place */}
-                        <div className="flex flex-col items-center justify-end">
-                          {leaderboard[1] && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: 0.3 }}
-                              className="text-center"
-                            >
-                              <div className="h-14 w-14 mx-auto rounded-xl bg-muted flex items-center justify-center mb-2">
-                                <span className="font-bold text-lg">{leaderboard[1].username.charAt(0).toUpperCase()}</span>
-                              </div>
-                              <p className="font-bold text-sm truncate max-w-[100px]">{leaderboard[1].username}</p>
-                              <p className="text-2xl font-black text-muted-foreground">{leaderboard[1].total_score}</p>
-                              <div className="h-20 w-full rounded-t-xl bg-muted/50 border border-border/30 mt-2 flex items-center justify-center">
-                                <Medal className="h-6 w-6 text-muted-foreground" />
-                              </div>
-                            </motion.div>
-                          )}
-                        </div>
-
-                        {/* 1st Place */}
-                        <div className="flex flex-col items-center justify-end">
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
-                            className="text-center"
-                          >
-                            <div className="h-16 w-16 mx-auto rounded-xl bg-gold/15 border-2 border-gold/30 flex items-center justify-center mb-2 legendary-glow">
-                              <span className="font-black text-xl text-gold">{leaderboard[0].username.charAt(0).toUpperCase()}</span>
-                            </div>
-                            <p className="font-bold truncate max-w-[120px]">{leaderboard[0].username}</p>
-                            <p className="text-3xl font-black text-gold">{leaderboard[0].total_score}</p>
-                            <div className="h-28 w-full rounded-t-xl bg-gold/10 border border-gold/20 mt-2 flex items-center justify-center">
-                              <Crown className="h-8 w-8 text-gold" />
-                            </div>
-                          </motion.div>
-                        </div>
-
-                        {/* 3rd Place */}
-                        <div className="flex flex-col items-center justify-end">
-                          {leaderboard[2] && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: 0.5 }}
-                              className="text-center"
-                            >
-                              <div className="h-14 w-14 mx-auto rounded-xl bg-muted flex items-center justify-center mb-2">
-                                <span className="font-bold text-lg">{leaderboard[2].username.charAt(0).toUpperCase()}</span>
-                              </div>
-                              <p className="font-bold text-sm truncate max-w-[100px]">{leaderboard[2].username}</p>
-                              <p className="text-2xl font-black text-muted-foreground">{leaderboard[2].total_score}</p>
-                              <div className="h-14 w-full rounded-t-xl bg-muted/50 border border-border/30 mt-2 flex items-center justify-center">
-                                <Award className="h-5 w-5 text-muted-foreground" />
-                              </div>
-                            </motion.div>
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* Full Rankings */}
-                    <motion.div {...itemProps} className="bento-card p-0 overflow-hidden">
-                      <div className="divide-y divide-border/30">
-                        {leaderboard.map((entry, index) => (
-                          <motion.div
-                            key={entry.user_id}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.05 }}
-                            className={`flex items-center gap-4 px-6 py-4 transition-colors ${
-                              entry.user_id === user?.id ? 'bg-primary/5' : 'hover:bg-muted/30'
-                            }`}
-                          >
-                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm ${
-                              index === 0 ? 'bg-gold/15 text-gold' :
-                              index === 1 ? 'bg-muted text-foreground' :
-                              index === 2 ? 'bg-muted text-foreground' :
-                              'bg-muted/50 text-muted-foreground'
-                            }`}>
-                              {index + 1}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold truncate">
-                                {entry.username}
-                                {entry.user_id === user?.id && <span className="text-xs text-primary ml-2">(you)</span>}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {entry.quizzes_taken} quiz{entry.quizzes_taken !== 1 ? 'zes' : ''} completed
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-black text-xl">{entry.total_score}</p>
-                              <p className="text-2xs text-muted-foreground uppercase tracking-wider">weighted pts</p>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  </>
-                )}
+                <LeaderboardPanel leaderboard={leaderboard} currentUserId={user?.id} />
               </TabsContent>
             )}
 
-            {/* Pulse Tab (owner only) */}
-            {user?.id === room.owner_id && (
+            {/* Pulse Tab */}
+            {isOwner && (
               <TabsContent value="pulse" className="space-y-6">
                 <PulseTab roomId={room.id} ownerId={room.owner_id} currentUserId={user.id} />
               </TabsContent>
@@ -911,7 +570,7 @@ const RoomPage = () => {
             </TabsContent>
 
             {/* Settings Tab */}
-            {user?.id === room.owner_id && (
+            {isOwner && (
               <TabsContent value="settings" className="space-y-6">
                 <RoomSettings
                   roomId={room.id}
