@@ -29,6 +29,9 @@ dist-ssr
 # Test output
 test-results/
 
+# Supabase CLI temp files
+supabase/.temp/
+
 # Internal docs (not needed for deployment)
 Build.md
 GAP_REPORT.md
