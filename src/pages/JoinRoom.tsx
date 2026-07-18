@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, Users } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
+import { fadeUp } from '@/lib/motion';
 
 const JoinRoom = () => {
   const { code } = useParams<{ code: string }>();
@@ -51,7 +53,12 @@ const JoinRoom = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background dot-grid p-4">
+    <motion.div
+      variants={fadeUp}
+      initial="hidden"
+      animate="visible"
+      className="min-h-screen flex flex-col items-center justify-center bg-background dot-grid p-4"
+    >
       <Logo />
       <div className="mt-8 text-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
@@ -59,7 +66,7 @@ const JoinRoom = () => {
           {authLoading ? 'Checking authentication…' : joining ? 'Joining room…' : 'Redirecting…'}
         </p>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

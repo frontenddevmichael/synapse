@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Trophy, Star, Crown, Target, Flame, Zap, Medal, Clock, Home, Users, X, LucideIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { easeOutExpo } from '@/lib/motion';
 
 interface AchievementToastProps {
   name: string;
@@ -40,7 +41,7 @@ export function AchievementToast({ name, description, icon, xpReward, onClose }:
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1.5, opacity: 0.3 }}
-          transition={{ duration: 1, ease: 'easeOut' }}
+          transition={{ duration: 1, ease: easeOutExpo }}
           className="absolute w-[400px] h-[400px] rounded-full bg-gold/20 blur-3xl"
         />
 

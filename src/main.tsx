@@ -1,6 +1,24 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { supabase } from "@/integrations/supabase/client";
+
+function logClientError(message: string, stack?: string) {
+  supabase.from('error_logs').insert({
+    error_message: message,
+    error_stack: stack,
+    url: window.location.href,
+    user_agent: navigator.userAgent,
+  }).then(() => {}).catch(() => {});
+}
+
+window.addEventListener('error', (event) => {
+  logClientError(event.message, event.error?.stack);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  logClientError(event.reason?.message ?? String(event.reason), event.reason?.stack);
+});
 
 // Register service worker for PWA
 if ('serviceWorker' in navigator) {

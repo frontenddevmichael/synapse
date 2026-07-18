@@ -4,8 +4,8 @@
 
 /* ═══════════════════════════════════════════════
    SYNAPSE DESIGN SYSTEM — "Ink & Voltage"
-   High-contrast editorial meets electric arcade.
-   Monochrome base, surgical lime accent.
+   Paper-toned notebook warmth, surgical spark accent.
+   Premium comes from precision, not decoration.
    ═══════════════════════════════════════════════ */
 
 @layer base {
@@ -46,6 +46,9 @@
     /* Gold for achievements */
     --gold: 45 93% 47%;
     --gold-foreground: 220 20% 10%;
+
+    --copper: 32 100% 42%;
+    --copper-foreground: 0 0% 100%;
 
     --border: 220 14% 88%;
     --input: 220 14% 88%;
@@ -128,6 +131,9 @@
 
     --gold: 45 93% 52%;
     --gold-foreground: 240 10% 6%;
+
+    --copper: 32 95% 48%;
+    --copper-foreground: 240 10% 6%;
 
     --border: 240 8% 18%;
     --input: 240 8% 20%;
@@ -350,7 +356,29 @@
 }
 
 @layer utilities {
-  /* ──── Slide transitions ──── */
+  /* ──── Synaptic Burst signature animation ──── */
+@keyframes synapticBurst {
+  0% { opacity: 0; transform: scale(0.5); filter: blur(12px) brightness(1.5); }
+  40% { opacity: 1; transform: scale(1.15); filter: blur(0) brightness(1.3); }
+  70% { opacity: 1; transform: scale(0.98); filter: brightness(1); }
+  100% { opacity: 1; transform: scale(1); filter: brightness(1); }
+}
+
+.synaptic-burst {
+  animation: synapticBurst 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes copperFlash {
+  0% { box-shadow: 0 0 0 0 hsl(var(--copper) / 0.5); }
+  50% { box-shadow: 0 0 40px 12px hsl(var(--copper) / 0.3); }
+  100% { box-shadow: 0 0 0 0 hsl(var(--copper) / 0); }
+}
+
+.copper-flash {
+  animation: copperFlash 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ──── Slide transitions ──── */
   .animate-slide-in-right {
     animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
@@ -537,6 +565,16 @@
 
   .mb-mobile-nav {
     margin-bottom: 3.5rem;
+  }
+}
+
+/* ──── Respect reduced motion at the system level ──── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

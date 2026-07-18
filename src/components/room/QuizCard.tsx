@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Timer, Trash2 } from 'lucide-react';
+import { Timer, Trash2, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { AttemptHistoryDialog } from '@/components/quiz/AttemptHistoryDialog';
+import { EditQuestionsDialog } from '@/components/quiz/EditQuestionsDialog';
 
 interface QuizCardProps {
   id: string;
@@ -54,13 +56,17 @@ function QuizCardImpl({ id, title, description, difficulty, timeLimitMinutes, mo
                 </span>
               )}
             </div>
+            <div className="flex items-center gap-1 mt-1">
+              <AttemptHistoryDialog quizId={id} quizTitle={title} />
+              {canDelete && <EditQuestionsDialog quizId={id} quizTitle={title} canEdit={canDelete} />}
+            </div>
           </div>
           {canDelete && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="icon"
                   aria-label={`Delete quiz ${title}`}
-                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                  className="h-7 w-7 opacity-60 hover:opacity-100 transition-opacity shrink-0"
                   onClick={(e) => e.stopPropagation()}>
                   <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
                 </Button>

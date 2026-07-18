@@ -1,12 +1,13 @@
-const CACHE_NAME = 'synapse-v3';
+const CACHE_NAME = 'synapse-v4';
 const STATIC_ASSETS = [
   '/manifest.json',
   '/favicon.svg',
+  '/index.html',
 ];
 
-const DYNAMIC_CACHE = 'synapse-dynamic-v2';
+const DYNAMIC_CACHE = 'synapse-dynamic-v3';
 
-// Install — cache only static assets, never the SPA shell
+// Install — cache static assets and the SPA shell
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
@@ -46,14 +47,18 @@ self.addEventListener('fetch', (event) => {
     url.hostname.includes('cdnjs.cloudflare.com');
   if (!sameOrigin && !allowedExternal) return;
 
-  // Network-first for HTML/document navigations
+  // Network-first for HTML/document navigations — cache response for offline
   if (event.request.mode === 'navigate' || event.request.destination === 'document') {
     event.respondWith(
       fetch(event.request)
-        .then((response) => response)
+        .then(async (response) => {
+          const cache = await caches.open(DYNAMIC_CACHE);
+          cache.put(event.request, response.clone());
+          return response;
+        })
         .catch(async () => {
           const cached = await caches.match(event.request);
-          return cached || new Response('Offline', { status: 503 });
+          return cached || caches.match('/index.html') || new Response('Offline', { status: 503 });
         })
     );
     return;

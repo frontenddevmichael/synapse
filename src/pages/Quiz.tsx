@@ -37,7 +37,6 @@ interface Question {
   question_text: string;
   question_type: 'multiple_choice' | 'true_false';
   options: string[];
-  correct_answer: string;
   explanation: string | null;
   order_index: number;
 }
@@ -85,6 +84,8 @@ const QuizPage = () => {
   const [hasCompletedAttempt, setHasCompletedAttempt] = useState(false);
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<string>>(new Set());
   const [previousBestScore, setPreviousBestScore] = useState<number | null>(null);
+  const [answerFeedback, setAnswerFeedback] = useState<Map<string, { correct: boolean; correctAnswer: string; explanation: string | null }>>(new Map());
+  const [correctAnswersMap, setCorrectAnswersMap] = useState<Record<string, { correct_answer: string; explanation: string | null }>>({});
   const [showTypewriter, setShowTypewriter] = useState(true);
 
   const fetchBookmarks = async () => {
@@ -124,7 +125,7 @@ const QuizPage = () => {
     if (prefsData) setUserPreferences(prefsData as UserPreferences);
     const timeLimit = quizData.time_limit_minutes || prefsData?.default_time_limit || null;
     if (roomData?.mode === 'challenge' || quizData.time_limit_minutes) setEffectiveTimeLimit(timeLimit);
-    const { data: questionsData } = await supabase.from('questions').select('*').eq('quiz_id', quizId).order('order_index');
+    const { data: questionsData } = await supabase.from('questions_public').select('*').eq('quiz_id', quizId).order('order_index');
     if (questionsData) {
       setQuestions(questionsData.map((q: any) => ({ ...q, options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options })));
     }
@@ -169,7 +170,13 @@ const QuizPage = () => {
   const selectAnswer = async (questionId: string, answer: string) => {
     const newAnswers = { ...answers, [questionId]: answer };
     setAnswers(newAnswers);
-    if (roomMode === 'study') setAnsweredQuestions(prev => new Set(prev).add(questionId));
+    if (roomMode === 'study') {
+      setAnsweredQuestions(prev => new Set(prev).add(questionId));
+      const { data: feedback } = await supabase.rpc('check_answer', { _question_id: questionId, _answer: answer });
+      if (feedback && !feedback.error) {
+        setAnswerFeedback(prev => new Map(prev).set(questionId, { correct: feedback.correct, correctAnswer: feedback.correct_answer, explanation: feedback.explanation }));
+      }
+    }
     if (attempt) await supabase.from('quiz_attempts').update({ answers: newAnswers }).eq('id', attempt.id);
     updateProgress(currentQuestionIndex, Object.keys(newAnswers).length);
   };
@@ -182,63 +189,42 @@ const QuizPage = () => {
   const submitQuiz = async () => {
     if (!attempt || !user) return;
     setIsSubmitting(true);
-    let correctCount = 0;
-    questions.forEach((q) => { if (answers[q.id] === q.correct_answer) correctCount++; });
-    const score = Math.round((correctCount / questions.length) * 100);
-    const { error } = await supabase.from('quiz_attempts').update({ status: 'completed', score, answers, completed_at: new Date().toISOString() }).eq('id', attempt.id);
-    if (error) { toast({ title: 'Failed to submit', description: error.message, variant: 'destructive' }); setIsSubmitting(false); return; }
-    
-    // Fire confetti for perfect scores
+
+    const { data: gradeResult, error: gradeError } = await supabase.rpc('grade_quiz', { _attempt_id: attempt.id });
+    if (gradeError || gradeResult?.error) {
+      toast({ title: 'Failed to grade quiz', description: gradeResult?.error || gradeError?.message || 'Unknown error', variant: 'destructive' });
+      setIsSubmitting(false); return;
+    }
+
+    const { score, correct_answers } = gradeResult;
+    setCorrectAnswersMap(correct_answers);
+
     if (score === 100) {
       setTimeout(() => firePerfectScore(), 300);
     } else if (score >= 80) {
       setTimeout(() => fireSmall(), 300);
     }
-    
+
     try {
       const { data: prevAttempts } = await supabase.from('quiz_attempts').select('score').eq('quiz_id', quizId).eq('user_id', user.id).eq('status', 'completed').neq('id', attempt.id).order('completed_at', { ascending: false }).limit(1);
-      const previousScore = prevAttempts?.[0]?.score ?? null;
-      const gamResult = await updateStatsOnQuizComplete(correctCount, questions.length, score, attempt.started_at || new Date().toISOString(), questions.map(q => ({ id: q.id, correct_answer: q.correct_answer })), answers, previousScore);
+      const prevScore = prevAttempts?.[0]?.score ?? null;
+      const gamResult = await updateStatsOnQuizComplete(attempt.id, score, attempt.started_at || new Date().toISOString(), questions.map(q => ({ id: q.id, correct_answer: correct_answers[q.id]?.correct_answer })), answers, prevScore);
       if (gamResult) { setXpEarned(gamResult.xpEarned); if (gamResult.levelUp) { setLeveledUp(true); setNewLevel(gamResult.newLevel); } }
-      const today = new Date().toISOString().split('T')[0];
-      const { data: existingActivity } = await supabase.from('daily_activity').select('*').eq('user_id', user.id).eq('date', today).maybeSingle();
-      if (existingActivity) {
-        await supabase.from('daily_activity').update({ quizzes_completed: (existingActivity.quizzes_completed || 0) + 1, correct_answers: (existingActivity.correct_answers || 0) + correctCount, total_answers: (existingActivity.total_answers || 0) + questions.length, xp_earned: (existingActivity.xp_earned || 0) + (gamResult?.xpEarned || 0), perfect_quizzes: (existingActivity.perfect_quizzes || 0) + (score === 100 ? 1 : 0) }).eq('id', existingActivity.id);
-      } else {
-        await supabase.from('daily_activity').insert({ user_id: user.id, date: today, quizzes_completed: 1, correct_answers: correctCount, total_answers: questions.length, xp_earned: gamResult?.xpEarned || 0, perfect_quizzes: score === 100 ? 1 : 0 });
-      }
     } catch (err) { console.error('Gamification update error:', err); }
-    
-    // Auto-populate recall cards for wrong answers (silent)
+
     try {
-      const wrongQuestionIds = questions
-        .filter(q => answers[q.id] !== q.correct_answer)
-        .map(q => q.id);
-      
+      const wrongQuestionIds = questions.filter(q => correct_answers[q.id] && answers[q.id] !== correct_answers[q.id].correct_answer).map(q => q.id);
       if (wrongQuestionIds.length > 0) {
         for (const qId of wrongQuestionIds) {
-          await supabase
-            .from('recall_cards')
-            .upsert(
-              {
-                user_id: user.id,
-                question_id: qId,
-                interval_days: 1,
-                ease_factor: 2.5,
-                repetitions: 0,
-                next_review_at: new Date().toISOString(),
-              },
-              { onConflict: 'user_id,question_id' }
-            );
+          await supabase.from('recall_cards').upsert({ user_id: user.id, question_id: qId, interval_days: 1, ease_factor: 2.5, repetitions: 0, next_review_at: new Date().toISOString() }, { onConflict: 'user_id,question_id' });
         }
       }
     } catch (err) { console.error('Recall auto-populate error:', err); }
-    
-    // Update personal best
+
     const isNewBest = previousBestScore === null || score > previousBestScore;
     if (isNewBest) setPreviousBestScore(score);
-    
-    setAttempt({ ...attempt, status: 'completed', score }); setShowResults(true); setIsSubmitting(false);
+
+    setAttempt({ ...attempt, status: 'completed', score } as QuizAttempt); setShowResults(true); setIsSubmitting(false);
     endSession();
     toast({ title: score === 100 ? '🎉 Perfect score!' : 'Quiz completed!', description: `You scored ${score}%` });
   };
@@ -247,12 +233,11 @@ const QuizPage = () => {
   const handleRetryMistakes = async () => {
     if (!quizId || !user) return;
     const incorrectQuestionIds = questions
-      .filter(q => answers[q.id] !== q.correct_answer)
+      .filter(q => correctAnswersMap[q.id] && answers[q.id] !== correctAnswersMap[q.id].correct_answer)
       .map(q => q.id);
     
     if (incorrectQuestionIds.length === 0) return;
     
-    // Create a new attempt with only incorrect questions tracked
     const { data, error } = await supabase.from('quiz_attempts').insert({
       quiz_id: quizId, user_id: user.id, status: 'in_progress',
       started_at: new Date().toISOString(), total_questions: questions.length, answers: {}
@@ -261,18 +246,16 @@ const QuizPage = () => {
     if (error) { toast({ title: 'Failed to start retry', variant: 'destructive' }); return; }
     
     setAttempt(data as QuizAttempt);
-    // Pre-fill correct answers, only show incorrect ones
     const prefilledAnswers: Record<string, string> = {};
     questions.forEach(q => {
-      if (answers[q.id] === q.correct_answer) {
-        prefilledAnswers[q.id] = q.correct_answer;
+      if (correctAnswersMap[q.id] && answers[q.id] === correctAnswersMap[q.id].correct_answer) {
+        prefilledAnswers[q.id] = correctAnswersMap[q.id].correct_answer;
       }
     });
     setAnswers(prefilledAnswers);
     setAnsweredQuestions(new Set(Object.keys(prefilledAnswers)));
     setShowResults(false);
     
-    // Jump to first incorrect question
     const firstIncorrectIndex = questions.findIndex(q => incorrectQuestionIds.includes(q.id));
     setCurrentQuestionIndex(firstIncorrectIndex >= 0 ? firstIncorrectIndex : 0);
     setShowTypewriter(true);
@@ -377,6 +360,7 @@ const QuizPage = () => {
           score={attempt.score || 0}
           questions={questions}
           answers={answers}
+          correctAnswers={correctAnswersMap}
           previousBestScore={previousBestScore}
           xpEarned={xpEarned}
           leveledUp={leveledUp}
@@ -456,8 +440,9 @@ const QuizPage = () => {
 
             <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-10">
               {currentQuestion.options.map((option, i) => {
+                const feedback = answerFeedback.get(currentQuestion.id);
                 const showStudyFeedback = roomMode === 'study' && currentQuestionAnswered;
-                const isCorrectOption = option === currentQuestion.correct_answer;
+                const isCorrectOption = feedback ? option === feedback.correctAnswer : false;
                 const isSelected = answers[currentQuestion.id] === option;
                 const isWrongAnswer = showStudyFeedback && isSelected && !isCorrectOption;
 
@@ -492,8 +477,8 @@ const QuizPage = () => {
               })}
             </div>
 
-            {roomMode === 'study' && currentQuestionAnswered && currentQuestion.explanation && (
-              <StudyModeAnswer options={currentQuestion.options} selectedAnswer={answers[currentQuestion.id]} correctAnswer={currentQuestion.correct_answer} explanation={currentQuestion.explanation} showFeedback={true} />
+            {roomMode === 'study' && currentQuestionAnswered && answerFeedback.get(currentQuestion.id)?.explanation && (
+              <StudyModeAnswer options={currentQuestion.options} selectedAnswer={answers[currentQuestion.id]} correctAnswer={answerFeedback.get(currentQuestion.id)!.correctAnswer} explanation={answerFeedback.get(currentQuestion.id)!.explanation} showFeedback={true} />
             )}
 
             <div className="flex justify-between items-center gap-3">

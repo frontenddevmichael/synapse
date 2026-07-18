@@ -21,6 +21,7 @@ interface RecallCard {
   question_text: string;
   correct_answer: string;
   options: string[];
+  explanation?: string | null;
 }
 
 const Recall = () => {
@@ -46,7 +47,7 @@ const Recall = () => {
     try {
       const { data, error } = await supabase
         .from('recall_cards')
-        .select('id, question_id, interval_days, ease_factor, repetitions, next_review_at')
+        .select('id, question_id, interval_days, ease_factor, repetitions, next_review_at, question_text, correct_answer, explanation, options')
         .eq('user_id', user.id)
         .lte('next_review_at', new Date().toISOString())
         .order('next_review_at', { ascending: true });
@@ -58,33 +59,18 @@ const Recall = () => {
         return;
       }
 
-      const questionIds = data.map((c: any) => c.question_id);
-      const { data: questions } = await supabase
-        .from('questions')
-        .select('id, question_text, correct_answer, options')
-        .in('id', questionIds);
+      const cards: RecallCard[] = data.map((c: any) => ({
+        id: c.id,
+        question_id: c.question_id,
+        interval_days: c.interval_days,
+        ease_factor: c.ease_factor,
+        repetitions: c.repetitions,
+        question_text: c.question_text || '',
+        correct_answer: c.correct_answer || '',
+        options: c.options ? (typeof c.options === 'string' ? JSON.parse(c.options) : c.options) : [],
+      }));
 
-      const questionMap: Record<string, any> = {};
-      (questions || []).forEach((q: any) => {
-        questionMap[q.id] = q;
-      });
-
-      const enriched: RecallCard[] = data
-        .filter((c: any) => questionMap[c.question_id])
-        .map((c: any) => ({
-          id: c.id,
-          question_id: c.question_id,
-          interval_days: c.interval_days,
-          ease_factor: c.ease_factor,
-          repetitions: c.repetitions,
-          question_text: questionMap[c.question_id].question_text,
-          correct_answer: questionMap[c.question_id].correct_answer,
-          options: typeof questionMap[c.question_id].options === 'string'
-            ? JSON.parse(questionMap[c.question_id].options)
-            : questionMap[c.question_id].options,
-        }));
-
-      setCards(enriched);
+      setCards(cards);
     } catch (err) {
       console.error('[recall] fetch failed', err);
       setCards([]);
@@ -204,7 +190,11 @@ const Recall = () => {
         <div
           className="w-full max-w-lg perspective-1000 cursor-pointer mb-8"
           style={{ perspective: '1000px' }}
+          role="button"
+          tabIndex={0}
+          aria-label={isFlipped ? 'Show question' : 'Show answer'}
           onClick={() => !isFlipped && setIsFlipped(true)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); !isFlipped && setIsFlipped(true); } }}
         >
           <AnimatePresence mode="wait">
             <motion.div

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { getXpProgress } from '@/utils/level';
 
 interface UserStats {
   xp: number;
@@ -29,13 +30,6 @@ interface Achievement {
   requirement_value: number;
   earned_at?: string;
 }
-
-const XP_PER_CORRECT = 10;
-const XP_PER_QUIZ = 25;
-const XP_BONUS_PERFECT = 50;
-
-/** Progressive XP curve: each level requires more XP */
-const xpForLevel = (level: number): number => 100 * level;
 
 export function useGamification() {
   const { user } = useAuth();
@@ -91,31 +85,8 @@ export function useGamification() {
     }
   }, [user, fetchStats, fetchAchievements]);
 
-  const calculateLevel = (xp: number): number => {
-    let level = 1;
-    let xpNeeded = 0;
-    while (xpNeeded + xpForLevel(level) <= xp) {
-      xpNeeded += xpForLevel(level);
-      level++;
-    }
-    return level;
-  };
-
-  const getXpProgress = (): { current: number; max: number; percentage: number } => {
-    if (!stats) return { current: 0, max: xpForLevel(1), percentage: 0 };
-    let level = 1;
-    let xpUsed = 0;
-    while (xpUsed + xpForLevel(level) <= stats.xp) {
-      xpUsed += xpForLevel(level);
-      level++;
-    }
-    const currentLevelXp = stats.xp - xpUsed;
-    const maxXp = xpForLevel(level);
-    return {
-      current: currentLevelXp,
-      max: maxXp,
-      percentage: (currentLevelXp / maxXp) * 100
-    };
+  const getXpProgressHook = (): { current: number; max: number; percentage: number } => {
+    return stats ? getXpProgress(stats.xp) : { current: 0, max: 100, percentage: 0 };
   };
 
   /**
@@ -161,8 +132,8 @@ export function useGamification() {
   const checkAndAwardAchievements = async (
     newStats: Partial<UserStats>,
     score: number,
-    completionTimeSeconds: number,
-    hotStreakInQuiz: number
+    _completionTimeSeconds: number,
+    _hotStreakInQuiz: number
   ) => {
     if (!user) return 0;
 
@@ -170,42 +141,14 @@ export function useGamification() {
     const totalQuizzes = newStats.total_quizzes_completed || stats?.total_quizzes_completed || 0;
     const streakDays = newStats.streak_days || stats?.streak_days || 0;
     const currentHotStreak = newStats.hot_streak || 0;
-    const perfectScores = newStats.perfect_scores || stats?.perfect_scores || 0;
 
-    // === General achievements ===
     if (totalQuizzes >= 1 && !earnedAchievements.has('first_quiz')) toAward.push('first_quiz');
-    if (totalQuizzes >= 10 && !earnedAchievements.has('quiz_master_10')) toAward.push('quiz_master_10');
-    if (totalQuizzes >= 50 && !earnedAchievements.has('quiz_master_50')) toAward.push('quiz_master_50');
     if (score === 100 && !earnedAchievements.has('perfect_score')) toAward.push('perfect_score');
-
-    // === Streak achievements ===
-    if (streakDays >= 3 && !earnedAchievements.has('streak_3')) toAward.push('streak_3');
     if (streakDays >= 7 && !earnedAchievements.has('streak_7')) toAward.push('streak_7');
-    if (streakDays >= 30 && !earnedAchievements.has('streak_30')) toAward.push('streak_30');
-
-    // === Speed achievements ===
-    if (completionTimeSeconds < 120 && !earnedAchievements.has('quick_learner')) toAward.push('quick_learner');
-    if (completionTimeSeconds < 60 && score >= 80 && !earnedAchievements.has('blitz')) toAward.push('blitz');
-
-    // === Hot streak (offensive) achievements ===
     if (currentHotStreak >= 5 && !earnedAchievements.has('hot_hand')) toAward.push('hot_hand');
-    if (currentHotStreak >= 10 && !earnedAchievements.has('rampage')) toAward.push('rampage');
-
-    // === Perfect score streak ===
-    if (perfectScores >= 3 && !earnedAchievements.has('perfection_streak')) toAward.push('perfection_streak');
-
-    // === Time-based achievements ===
-    const hour = new Date().getHours();
-    if (hour < 8 && !earnedAchievements.has('early_bird')) toAward.push('early_bird');
-    if (hour >= 22 && !earnedAchievements.has('night_owl')) toAward.push('night_owl');
-    const day = new Date().getDay();
-    if ((day === 0 || day === 6) && !earnedAchievements.has('weekend_warrior')) toAward.push('weekend_warrior');
-
-    // === Defensive achievements ===
     if (streakDays >= 7 && !earnedAchievements.has('fortress')) toAward.push('fortress');
 
-    // === Social achievements (check room count) ===
-    if (!earnedAchievements.has('collaborator') || !earnedAchievements.has('room_creator')) {
+    if (!earnedAchievements.has('collaborator')) {
       const { data: memberRooms } = await supabase
         .from('room_members')
         .select('room_id')
@@ -214,22 +157,8 @@ export function useGamification() {
       if (memberRooms && memberRooms.length >= 3 && !earnedAchievements.has('collaborator')) {
         toAward.push('collaborator');
       }
-
-      const { data: ownedRooms } = await supabase
-        .from('rooms')
-        .select('id')
-        .eq('owner_id', user.id)
-        .limit(1);
-
-      if (ownedRooms && ownedRooms.length > 0 && !earnedAchievements.has('room_creator')) {
-        toAward.push('room_creator');
-      }
     }
 
-    // === Comeback kid: check if score improved by 30%+ from last attempt on same quiz ===
-    // This is handled externally by passing previous score
-
-    // Award all
     let totalXp = 0;
     for (const achievementId of toAward) {
       const awarded = await awardAchievement(achievementId);
@@ -243,8 +172,7 @@ export function useGamification() {
   };
 
   const updateStatsOnQuizComplete = async (
-    correctAnswers: number,
-    totalQuestions: number,
+    attemptId: string,
     score: number,
     startedAt: string,
     questionsData?: { id: string; correct_answer: string }[],
@@ -257,64 +185,29 @@ export function useGamification() {
     const startTime = new Date(startedAt);
     const completionTimeSeconds = (now.getTime() - startTime.getTime()) / 1000;
 
-    // Calculate hot streak from answers
     let hotStreakInQuiz = 0;
     if (questionsData && answersMap) {
       hotStreakInQuiz = calculateHotStreak(questionsData, answersMap);
     }
 
-    // Update cumulative hot streak
-    const newHotStreak = score === 100
-      ? stats.hot_streak + totalQuestions  // Perfect = extend streak by all questions
-      : hotStreakInQuiz; // Reset to trailing streak from this quiz
-    const newBestHotStreak = Math.max(stats.best_hot_streak, newHotStreak);
+    const { data: xpResult, error: xpError } = await supabase.rpc('award_xp', {
+      _attempt_id: attemptId,
+    });
 
-    // Perfect scores counter
-    const newPerfectScores = score === 100 ? stats.perfect_scores + 1 : 0; // Reset on non-perfect
-
-    // XP multiplier based on daily streak
-    const streakMultiplier = stats.streak_days >= 7 ? 1.5 : stats.streak_days >= 3 ? 1.25 : 1.0;
-
-    // Calculate XP earned
-    let xpEarned = Math.round((XP_PER_QUIZ + (correctAnswers * XP_PER_CORRECT)) * streakMultiplier);
-    if (score === 100) {
-      xpEarned += XP_BONUS_PERFECT;
+    if (xpError || xpResult?.error) {
+      console.error('Failed to award XP:', xpError || xpResult?.error);
+      return null;
     }
 
-    // Update streak
-    const today = now.toISOString().split('T')[0];
-    const lastActivity = stats.last_activity_date;
-    let newStreak = stats.streak_days;
-
-    if (lastActivity) {
-      const yesterday = new Date(now);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-      if (lastActivity === yesterdayStr) {
-        newStreak += 1;
-      } else if (lastActivity !== today) {
-        newStreak = 1;
-      }
-    } else {
-      newStreak = 1;
-    }
-
-    const newStats: Record<string, any> = {
-      xp: stats.xp + xpEarned,
-      level: calculateLevel(stats.xp + xpEarned),
-      streak_days: newStreak,
-      total_quizzes_completed: stats.total_quizzes_completed + 1,
-      total_correct_answers: stats.total_correct_answers + correctAnswers,
-      total_questions_answered: stats.total_questions_answered + totalQuestions,
-      last_activity_date: today,
-      hot_streak: newHotStreak,
-      best_hot_streak: newBestHotStreak,
-      perfect_scores: newPerfectScores,
-      xp_multiplier: streakMultiplier,
+    const newStats: Partial<UserStats> = {
+      xp: xpResult.new_xp,
+      level: xpResult.new_level,
+      streak_days: xpResult.new_streak,
+      total_quizzes_completed: (stats.total_quizzes_completed || 0) + 1,
+      perfect_scores: score === 100 ? (stats.perfect_scores || 0) + 1 : stats.perfect_scores || 0,
+      hot_streak: score === 100 ? (stats.hot_streak || 0) + (questionsData?.length || 0) : hotStreakInQuiz,
     };
 
-    // Check achievements and get bonus XP
     const achievementXp = await checkAndAwardAchievements(
       newStats as Partial<UserStats>,
       score,
@@ -322,34 +215,20 @@ export function useGamification() {
       hotStreakInQuiz
     );
 
-    // Comeback kid check
-    if (previousScore !== null && previousScore !== undefined && score - previousScore >= 30) {
-      const awarded = await awardAchievement('comeback_kid');
-      if (awarded) {
-        const a = achievements.find(x => x.id === 'comeback_kid');
-        if (a && achievementXp !== undefined) {
-          newStats.xp += a.xp_reward;
-        }
-      }
-    }
-
-    if (achievementXp) {
-      newStats.xp += achievementXp;
-      newStats.level = calculateLevel(newStats.xp);
-    }
-
-    // Update profile
-    await supabase
-      .from('profiles')
-      .update(newStats)
-      .eq('id', user.id);
-
-    setStats(prev => prev ? { ...prev, ...newStats } as UserStats : null);
+    setStats(prev => prev ? {
+      ...prev,
+      xp: newStats.xp || prev.xp,
+      level: newStats.level || prev.level,
+      streak_days: newStats.streak_days ?? prev.streak_days,
+      total_quizzes_completed: newStats.total_quizzes_completed || prev.total_quizzes_completed,
+      hot_streak: newStats.hot_streak || prev.hot_streak,
+      perfect_scores: newStats.perfect_scores || prev.perfect_scores,
+    } as UserStats : null);
 
     return {
-      xpEarned: xpEarned + (achievementXp || 0),
-      levelUp: newStats.level > stats.level,
-      newLevel: newStats.level
+      xpEarned: xpResult.xp_earned + (achievementXp || 0),
+      levelUp: xpResult.level_up,
+      newLevel: xpResult.new_level,
     };
   };
 
@@ -363,7 +242,7 @@ export function useGamification() {
     newAchievement,
     clearNewAchievement,
     updateStatsOnQuizComplete,
-    getXpProgress,
+    getXpProgress: getXpProgressHook,
     refetch: () => Promise.all([fetchStats(), fetchAchievements()])
   };
 }

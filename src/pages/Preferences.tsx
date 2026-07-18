@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, Loader2 } from 'lucide-react';
+import { Save, Loader2, Target, Snowflake, Bell, BellOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -12,6 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { fadeUp, stagger } from '@/lib/motion';
 
 interface UserPreferences {
@@ -29,6 +31,11 @@ const Preferences = () => {
   const [preferences, setPreferences] = useState<UserPreferences>({
     default_difficulty: 'medium', default_time_limit: null, show_answers_after_quiz: true,
   });
+  const [dailyGoalEnabled, setDailyGoalEnabled] = useState(false);
+  const [streakFreezeCount, setStreakFreezeCount] = useState(0);
+  const [streakFreezeAvailable, setStreakFreezeAvailable] = useState(false);
+  const [isUsingFreeze, setIsUsingFreeze] = useState(false);
+  const { permission: pushPermission, subscribed: pushSubscribed, isLoading: pushLoading, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
 
   useEffect(() => {
     if (!user) return;
@@ -45,6 +52,14 @@ const Preferences = () => {
         show_answers_after_quiz: data.show_answers_immediately ?? true,
       });
     }
+
+    const { data: profile } = await supabase.from('profiles').select('streak_freeze_count, streak_freeze_available, daily_goal_completed').eq('id', user.id).maybeSingle();
+    if (profile) {
+      setDailyGoalEnabled(profile.daily_goal_completed);
+      setStreakFreezeCount(profile.streak_freeze_count);
+      setStreakFreezeAvailable(profile.streak_freeze_available);
+    }
+
     setIsLoading(false);
   };
 
@@ -60,6 +75,18 @@ const Preferences = () => {
     if (error) toast({ title: 'Failed to save', description: error.message, variant: 'destructive' });
     else toast({ title: 'Preferences saved!' });
     setIsSaving(false);
+  };
+
+  const handleUseStreakFreeze = async () => {
+    if (!user || streakFreezeCount < 1) return;
+    setIsUsingFreeze(true);
+    const { error } = await supabase.rpc('use_streak_freeze', { _user_id: user.id });
+    if (error) toast({ title: 'Failed to use freeze', description: error.message, variant: 'destructive' });
+    else {
+      setStreakFreezeCount(prev => prev - 1);
+      toast({ title: 'Streak freeze applied!', description: 'Your streak is protected for today.' });
+    }
+    setIsUsingFreeze(false);
   };
 
   if (isLoading) {
@@ -129,16 +156,99 @@ const Preferences = () => {
                   </div>
                   <Switch checked={preferences.show_answers_after_quiz} onCheckedChange={(checked) => setPreferences({ ...preferences, show_answers_after_quiz: checked })} />
                 </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-                {/* Sticky save on mobile */}
-                <div className="sm:relative fixed bottom-14 sm:bottom-auto left-0 right-0 sm:left-auto sm:right-auto p-4 sm:p-0 bg-background/80 sm:bg-transparent backdrop-blur-sm sm:backdrop-blur-none border-t sm:border-0 border-border/30 z-30">
-                  <Button onClick={handleSave} disabled={isSaving} className="w-full h-11 sm:h-12 font-bold text-sm sm:text-base">
-                    {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save Preferences</>}
+          {/* Gamification Settings */}
+          <motion.div variants={fadeUp} className="mt-6">
+            <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl font-bold">Gamification</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Daily goals and streak protection</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6 pt-0 sm:pt-0">
+                <div className="flex items-center justify-between p-3 sm:p-4 rounded-lg sm:rounded-xl bg-muted/30 border border-border/30 gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Target className="h-5 w-5 text-primary shrink-0" />
+                    <div className="space-y-0.5 min-w-0">
+                      <Label className="font-semibold text-sm">Daily Goal</Label>
+                      <p className="text-xs text-muted-foreground">Complete at least one quiz every day</p>
+                    </div>
+                  </div>
+                  <Badge variant={dailyGoalEnabled ? "default" : "outline"} className="shrink-0 text-xs">
+                    {dailyGoalEnabled ? "Today's goal met" : "Not yet today"}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center justify-between p-3 sm:p-4 rounded-lg sm:rounded-xl bg-muted/30 border border-border/30 gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Snowflake className="h-5 w-5 text-blue-400 shrink-0" />
+                    <div className="space-y-0.5 min-w-0">
+                      <Label className="font-semibold text-sm">Streak Freezes</Label>
+                      <p className="text-xs text-muted-foreground">
+                        {streakFreezeCount > 0 ? `${streakFreezeCount} freeze${streakFreezeCount !== 1 ? 's' : ''} available` : 'No freezes available'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleUseStreakFreeze}
+                    disabled={streakFreezeCount < 1 || isUsingFreeze}
+                    className="shrink-0 gap-1.5 text-xs font-semibold"
+                  >
+                    {isUsingFreeze ? <Loader2 className="h-3 w-3 animate-spin" /> : <Snowflake className="h-3 w-3" />}
+                    Use Freeze
                   </Button>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Notifications */}
+          <motion.div variants={fadeUp} className="mt-6">
+            <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl font-bold">Notifications</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Push notifications for quiz reminders and updates</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                <div className="flex items-center justify-between p-3 sm:p-4 rounded-lg sm:rounded-xl bg-muted/30 border border-border/30 gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {pushSubscribed ? <Bell className="h-5 w-5 text-primary shrink-0" /> : <BellOff className="h-5 w-5 text-muted-foreground shrink-0" />}
+                    <div className="space-y-0.5 min-w-0">
+                      <Label className="font-semibold text-sm">Push Notifications</Label>
+                      <p className="text-xs text-muted-foreground">
+                        {pushSubscribed ? 'Notifications enabled' : pushPermission === 'denied' ? 'Permission denied — update browser settings' : 'Get notified about quiz reminders'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant={pushSubscribed ? 'outline' : 'default'}
+                    size="sm"
+                    onClick={pushSubscribed ? pushUnsubscribe : pushSubscribe}
+                    disabled={pushLoading || pushPermission === 'denied'}
+                    className="shrink-0 gap-1.5 text-xs font-semibold"
+                  >
+                    {pushLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : pushSubscribed ? <BellOff className="h-3 w-3" /> : <Bell className="h-3 w-3" />}
+                    {pushSubscribed ? 'Disable' : 'Enable'}
+                  </Button>
+                </div>
+                {!import.meta.env.VITE_VAPID_PUBLIC_KEY && (
+                  <p className="text-[11px] text-warning mt-2">Set VITE_VAPID_PUBLIC_KEY in your environment to enable push notifications.</p>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Sticky save on mobile */}
+          <div className="sm:relative fixed bottom-14 sm:bottom-auto left-0 right-0 sm:left-auto sm:right-auto p-4 sm:p-0 bg-background/80 sm:bg-transparent backdrop-blur-sm sm:backdrop-blur-none border-t sm:border-0 border-border/30 z-30 sm:mt-6">
+            <Button onClick={handleSave} disabled={isSaving} className="w-full h-11 sm:h-12 font-bold text-sm sm:text-base">
+              {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save Preferences</>}
+            </Button>
+          </div>
+
         </motion.div>
       </main>
     </div>

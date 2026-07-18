@@ -4,8 +4,8 @@
   "description": "Turn your notes into quizzes. Study smarter with your group.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1a1f2e",
-  "theme_color": "#2d4a6f",
+  "background_color": "#1A1A1E",
+  "theme_color": "#232329",
   "orientation": "portrait-primary",
   "categories": ["education", "productivity"],
   "icons": [
@@ -56,22 +56,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/screenshots/dashboard.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Dashboard view"
-    },
-    {
-      "src": "/screenshots/quiz.png",
-      "sizes": "720x1280",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Quiz view"
     }
   ],
   "shortcuts": [

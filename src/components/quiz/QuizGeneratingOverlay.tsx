@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Sparkles, Brain, FileText, CheckCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { easeOutCubic } from '@/lib/motion';
 
 interface QuizGeneratingOverlayProps {
   isGenerating: boolean;
@@ -54,7 +55,7 @@ export function QuizGeneratingOverlay({ isGenerating, documentName, questionCoun
           className="h-full bg-primary"
           initial={{ width: '0%' }}
           animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+          transition={{ duration: 0.5, ease: easeOutCubic }}
         />
       </div>
 

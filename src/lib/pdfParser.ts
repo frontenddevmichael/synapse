@@ -1,12 +1,7 @@
 // PDF Parser with CDN-based worker for better build compatibility
-import * as pdfjsLib from 'pdfjs-dist';
-
 // Use CDN for the worker to avoid build issues with the bundled worker
 const PDFJS_VERSION = '4.4.168';
 const PDFJS_CDN_URL = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.mjs`;
-
-// Set the worker source using CDN
-pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_CDN_URL;
 
 export interface PDFParseResult {
   text: string;
@@ -16,6 +11,8 @@ export interface PDFParseResult {
 
 export async function extractTextFromPDF(file: File): Promise<string> {
   try {
+    const pdfjsLib = await import('pdfjs-dist');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_CDN_URL;
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ 
       data: arrayBuffer,
@@ -53,6 +50,8 @@ export async function extractTextFromPDFWithProgress(
   onProgress?: (current: number, total: number) => void
 ): Promise<PDFParseResult> {
   try {
+    const pdfjsLib = await import('pdfjs-dist');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_CDN_URL;
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ 
       data: arrayBuffer,

@@ -4,12 +4,16 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { pageTransition } from "@/lib/motion";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AuthenticatedLayout } from "@/components/AuthenticatedLayout";
+import { usePageTracking } from "@/hooks/usePageTracking";
+import { OfflineBanner } from "@/components/OfflineBanner";
 
 // Eager: landing + auth (first-paint critical)
 import Index from "./pages/Index";
@@ -45,11 +49,48 @@ function RouteFallback() {
   );
 }
 
+function PageTransition({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      variants={pageTransition}
+      initial="initial"
+      animate="enter"
+      exit="exit"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 function ProtectedPage({ children }: { children: React.ReactNode }) {
   return (
     <ProtectedRoute>
       <AuthenticatedLayout>{children}</AuthenticatedLayout>
     </ProtectedRoute>
+  );
+}
+
+function AnimatedRoutes() {
+  const location = useLocation();
+  usePageTracking();
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<PageTransition><Index /></PageTransition>} />
+        <Route path="/auth" element={<PageTransition><Auth /></PageTransition>} />
+        <Route path="/reset-password" element={<PageTransition><ResetPassword /></PageTransition>} />
+        <Route path="/join/:code" element={<PageTransition><JoinRoom /></PageTransition>} />
+        <Route path="/dashboard" element={<ProtectedPage><PageTransition><Dashboard /></PageTransition></ProtectedPage>} />
+        <Route path="/room/:roomId" element={<ProtectedPage><ErrorBoundary><PageTransition><Room /></PageTransition></ErrorBoundary></ProtectedPage>} />
+        <Route path="/quiz/:quizId" element={<ProtectedRoute><ErrorBoundary><PageTransition><Quiz /></PageTransition></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/preferences" element={<ProtectedPage><PageTransition><Preferences /></PageTransition></ProtectedPage>} />
+        <Route path="/bookmarks" element={<ProtectedPage><PageTransition><Bookmarks /></PageTransition></ProtectedPage>} />
+        <Route path="/profile" element={<ProtectedPage><PageTransition><Profile /></PageTransition></ProtectedPage>} />
+        <Route path="/recall" element={<ProtectedPage><PageTransition><Recall /></PageTransition></ProtectedPage>} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
+      </Routes>
+    </AnimatePresence>
   );
 }
 
@@ -61,23 +102,10 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <OfflineBanner />
             <BrowserRouter>
               <Suspense fallback={<RouteFallback />}>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/join/:code" element={<JoinRoom />} />
-                  <Route path="/dashboard" element={<ProtectedPage><Dashboard /></ProtectedPage>} />
-                  <Route path="/room/:roomId" element={<ProtectedPage><Room /></ProtectedPage>} />
-                  <Route path="/quiz/:quizId" element={<ProtectedRoute><Quiz /></ProtectedRoute>} />
-                  <Route path="/preferences" element={<ProtectedPage><Preferences /></ProtectedPage>} />
-                  <Route path="/bookmarks" element={<ProtectedPage><Bookmarks /></ProtectedPage>} />
-                  <Route path="/profile" element={<ProtectedPage><Profile /></ProtectedPage>} />
-                  <Route path="/recall" element={<ProtectedPage><Recall /></ProtectedPage>} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                <AnimatedRoutes />
               </Suspense>
             </BrowserRouter>
           </TooltipProvider>

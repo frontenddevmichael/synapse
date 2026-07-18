@@ -1,17 +1,5 @@
-/**
- * AI Service Configuration
- * 
- * Synapse owns its AI layer. This module provides a clean abstraction
- * for quiz generation that can be swapped between providers.
- * 
- * Supported providers:
- * - lovable: Built-in Lovable AI Gateway (default)
- * - openai: OpenAI-compatible APIs (set AI_API_KEY and optionally AI_BASE_URL)
- * - groq: Groq API (set AI_API_KEY)
- */
-
 export interface AIConfig {
-  provider: 'lovable' | 'openai' | 'groq';
+  provider: 'openai' | 'groq';
   apiKey: string;
   baseUrl?: string;
   model?: string;
@@ -36,30 +24,21 @@ export interface GenerateQuizResponse {
 }
 
 const DEFAULT_MODELS: Record<string, string> = {
-  lovable: 'google/gemini-3-flash-preview',
   openai: 'gpt-4o-mini',
   groq: 'llama-3.1-70b-versatile',
 };
 
 const BASE_URLS: Record<string, string> = {
-  lovable: 'https://ai.gateway.lovable.dev/v1',
   openai: 'https://api.openai.com/v1',
   groq: 'https://api.groq.com/openai/v1',
 };
 
 export function getAIConfig(): AIConfig {
-  const provider = (Deno.env.get('AI_PROVIDER') || 'lovable') as AIConfig['provider'];
-  
-  let apiKey: string;
-  if (provider === 'lovable') {
-    apiKey = Deno.env.get('LOVABLE_API_KEY') || '';
-  } else {
-    apiKey = Deno.env.get('AI_API_KEY') || '';
-  }
-  
+  const provider = (Deno.env.get('AI_PROVIDER') || 'openai') as AIConfig['provider'];
+  const apiKey = Deno.env.get('AI_API_KEY') || '';
   const baseUrl = Deno.env.get('AI_BASE_URL') || BASE_URLS[provider];
   const model = Deno.env.get('AI_MODEL') || DEFAULT_MODELS[provider];
-  
+
   return { provider, apiKey, baseUrl, model };
 }
 
@@ -130,19 +109,17 @@ export async function callAI(
 }
 
 export function parseQuizResponse(aiResponse: string): QuizQuestion[] {
-  // Extract JSON array from response
   const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
   if (!jsonMatch) {
     throw new Error('PARSE_ERROR');
   }
 
   const questions = JSON.parse(jsonMatch[0]);
-  
+
   if (!Array.isArray(questions) || questions.length === 0) {
     throw new Error('EMPTY_RESULT');
   }
 
-  // Validate and normalize
   return questions.map((q, index) => ({
     question: q.question || `Question ${index + 1}`,
     type: q.type === 'true_false' ? 'true_false' : 'multiple_choice',

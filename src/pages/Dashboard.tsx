@@ -324,7 +324,7 @@ const Dashboard = () => {
                     )}
                     <motion.div {...itemProps} className="bento-card py-12 sm:py-16 flex flex-col items-center text-center">
                       <EmptyDeskIllustration className="w-48 h-36 mb-3 sm:mb-4" />
-                      <h3 className="font-bold text-base sm:text-lg mb-1">Nothing here yet</h3>
+                      <h3 className="font-black text-base sm:text-lg mb-1">Nothing here yet</h3>
                       <p className="text-sm text-muted-foreground">
                         Create a room or paste a code to join one
                       </p>

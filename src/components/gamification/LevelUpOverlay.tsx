@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Star, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { easeOutExpo } from '@/lib/motion';
 
 interface LevelUpOverlayProps {
   level: number;
@@ -17,10 +18,9 @@ export function LevelUpOverlay({ level, show, onClose }: LevelUpOverlayProps) {
     }
   }, [show, onClose]);
 
-  if (!show) return null;
-
   return (
     <AnimatePresence>
+      {show && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
         {/* Full-screen flash + backdrop */}
         <motion.div
@@ -51,7 +51,7 @@ export function LevelUpOverlay({ level, show, onClose }: LevelUpOverlayProps) {
               y: Math.sin((i / 12) * Math.PI * 2) * 200,
               opacity: [1, 1, 0],
             }}
-            transition={{ duration: 1.5, delay: 0.3, ease: 'easeOut' }}
+            transition={{ duration: 1.5, delay: 0.3, ease: easeOutExpo }}
             className="absolute w-3 h-3 rounded-full bg-gold/60"
           />
         ))}
@@ -110,6 +110,7 @@ export function LevelUpOverlay({ level, show, onClose }: LevelUpOverlayProps) {
           </motion.div>
         </motion.div>
       </div>
+      )}
     </AnimatePresence>
   );
 }

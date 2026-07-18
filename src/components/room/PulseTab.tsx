@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Users, AlertTriangle, FileText, BarChart3, Sparkles } from 'lucide-react';
+import { Users, AlertTriangle, FileText, BarChart3, Sparkles, Brain } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { getMemberActivity, getWeakQuestions, getUntouchedDocuments, getDifficultyCurve } from '@/utils/pulse';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
 import { fadeUp } from '@/lib/motion';
 
 interface PulseTabProps {
@@ -34,11 +35,13 @@ function getDifficultyLabel(score: number | null) {
 
 export function PulseTab({ roomId, ownerId, currentUserId }: PulseTabProps) {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [memberActivity, setMemberActivity] = useState<any[]>([]);
   const [weakQuestions, setWeakQuestions] = useState<any[]>([]);
   const [untouched, setUntouched] = useState<any[]>([]);
   const [curve, setCurve] = useState<any>({ easy: null, medium: null, hard: null });
   const [isLoading, setIsLoading] = useState(true);
+  const [isRemediating, setIsRemediating] = useState(false);
   const isNonOwner = currentUserId !== ownerId;
 
   useEffect(() => {
@@ -135,19 +138,44 @@ export function PulseTab({ roomId, ownerId, currentUserId }: PulseTabProps) {
         {weakQuestions.length === 0 ? (
           <p className="px-6 py-8 text-center text-muted-foreground">Not enough data yet.</p>
         ) : (
-          <div className="divide-y divide-border/20">
-            {weakQuestions.map((q: any) => (
-              <div key={q.id} className="px-6 py-3">
-                <p className="font-medium text-sm truncate mb-1">{q.question_text}</p>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-[10px]">{q.difficulty}</Badge>
-                  <span className="text-xs text-destructive font-semibold">
-                    {q.wrong_count} / {q.total_attempts} got it wrong ({q.failure_ratio}%)
-                  </span>
+          <>
+            <div className="divide-y divide-border/20">
+              {weakQuestions.map((q: any) => (
+                <div key={q.id} className="px-6 py-3">
+                  <p className="font-medium text-sm truncate mb-1">{q.question_text}</p>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px]">{q.difficulty}</Badge>
+                    <span className="text-xs text-destructive font-semibold">
+                      {q.wrong_count} / {q.total_attempts} got it wrong ({q.failure_ratio}%)
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <div className="px-6 py-3 border-t border-border/20">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 w-full"
+                disabled={isRemediating}
+                onClick={async () => {
+                  setIsRemediating(true);
+                  const { data, error } = await supabase.rpc('create_room_recall_cards', { _room_id: roomId });
+                  setIsRemediating(false);
+                  if (error) {
+                    toast({ title: 'Failed to create recall cards', description: error.message, variant: 'destructive' });
+                  } else if (data?.error) {
+                    toast({ title: 'Cannot remediate', description: data.error, variant: 'destructive' });
+                  } else {
+                    toast({ title: 'Recall cards created!', description: `${data?.created || 0} cards added for all members to review.` });
+                  }
+                }}
+              >
+                <Brain className={`h-3.5 w-3.5 ${isRemediating ? 'animate-pulse' : ''}`} />
+                {isRemediating ? 'Creating cards...' : 'Remediate Weak Questions'}
+              </Button>
+            </div>
+          </>
         )}
       </motion.div>
 

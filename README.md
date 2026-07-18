@@ -1,173 +1,118 @@
 # Synapse
 
-**Synapse** is a room-based collaborative learning platform that helps small groups study more effectively by turning shared documents into AI-generated quizzes. It is designed for focus, structure, and correctness — not social feeds, not content discovery, and not noise.
-
----
-
-## What Synapse Is
-
-* A **collaborative learning tool**, not a social network
-* A **room-first system** with clear ownership and enforced rules
-* A **quiz-driven learning workflow** powered by AI
-* A **Progressive Web App (PWA)** built for modern browsers and devices
-
-Users create or join rooms, upload study materials, generate quizzes, and take them individually or competitively depending on the room’s configuration.
-
----
-
-## Core Features
-
-### Authentication
-
-* Email and password sign-up / login
-* Unique usernames
-* Secure session persistence via Supabase Auth
-* Light and dark mode support
-
----
-
-### Rooms
-
-* Create rooms and invite others using unique room codes
-* Clear owner role with control over room settings
-* Automatic member management
-
-**Room Modes**
-
-| Mode      | Description                                                    |
-| --------- | -------------------------------------------------------------- |
-| Study     | Answers visible, leaderboard optional                          |
-| Challenge | Timed quizzes, leaderboard enabled                             |
-| Exam      | Timed quizzes, answers hidden until completion, no leaderboard |
-
-Room rules are enforced at both the backend and frontend level.
-
----
-
-### Documents → AI Quizzes
-
-* Upload PDFs or paste raw text
-* Documents stored in Supabase Storage
-* AI converts content into structured quizzes
-* Supported question types:
-
-  * Objective Qustions (multiple Choice)
-  * True / False
-* Difficulty levels: easy, medium, hard
-
----
-
-### Quiz Experience
-
-* One question displayed at a time
-* Optional time limits
-* Single attempt per user per quiz (soft enforced)
-* Clear progress indicators and completion feedback
-
-**Quiz lifecycle:**
-Not Started → In Progress → Completed
-
----
-
-### Leaderboards
-
-* Per-room leaderboards
-* Ranked by quiz score
-* Enabled or disabled by room owner
-* Automatically updated after quiz completion
-* Visibility depends on room mode
-
----
-
-### User Preferences
-
-Each user can set persistent preferences:
-
-* Default quiz difficulty
-* Preferred time limits
-* Answer reveal behavior
-
-User preferences apply automatically but **never override room-level rules**.
+Collaborative learning powered by AI-generated quizzes and spaced repetition. Upload study materials, generate quizzes, compete on leaderboards, and reinforce weak areas — all within private rooms.
 
 ---
 
 ## Tech Stack
 
-### Frontend
+**Frontend:** React 18, TypeScript, Vite, SWC, Tailwind CSS, framer-motion, shadcn/ui (Radix primitives)
 
-* Vanilla HTML, CSS, and JavaScript (ES Modules)
-* Modular component and style architecture
-* Responsive and accessible UI
-* Subtle, intentional animations (150–200ms)
+**Backend:** Supabase (Auth, Postgres, Storage, Edge Functions)
 
-### Backend
+**AI:** OpenAI/Groq-compatible API for quiz generation
 
-* Supabase Auth
-* Supabase Postgres
-* Supabase Storage
-
-### AI
-
-* First-party AI integration (OpenAI / Groq compatible)
-* Deterministic, schema-based quiz generation
-
-### PWA
-
-* Installable on desktop and mobile
-* Offline-ready application shell
-* Cached access to previously synced rooms and quizzes
+**PWA:** Installable, offline app shell with push notification support
 
 ---
 
-## Data Model (Supabase)
+## Features
 
-Core tables:
+- **Authentication** — Email/password + Google OAuth, password reset, email confirmation
+- **Rooms** — Create/join via code, owner + admin roles, settings (mode, leaderboard), code regeneration
+- **Documents → AI Quizzes** — Upload PDFs/DOCX or paste text; AI generates multiple-choice and true/false quizzes at configurable difficulty
+- **Quiz modes** — Study (instant feedback), Challenge (timed, leaderboard), Exam (timed, no answers until end)
+- **Spaced Repetition (Recall)** — SM-2 algorithm automatically identifies weak questions and schedules reviews
+- **Pulse Analytics** — Member activity, weak questions, difficulty curves, untouched documents
+- **Gamification** — XP, levels, streaks, hot streaks, 6 achievements (first_quiz, perfect_score, streak_7, hot_hand, collaborator, fortress), streak freeze
+- **Bookmarks** — Save questions with personal notes
+- **Leaderboards** — Per-room, per-quiz rankings
+- **Preferences** — Default difficulty, time limits, answer reveal behavior
+- **Offline support** — Read-only cache with 30-min TTL, offline banner
+- **Error monitoring** — Global error boundary + console error logging to `error_logs` table
 
-* Users
-* Rooms
-* RoomMembers
-* Documents
-* Quizzes
-* Questions
-* QuizAttempts
-* UserPreferences
+---
 
-All relationships are normalized and enforced with foreign keys.
+## Local Development
+
+1. Clone the repo and install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Copy the environment template:
+   ```bash
+   cp .env.example .env
+   ```
+
+3. Set your Supabase credentials in `.env`:
+   - `VITE_SUPABASE_URL` — your project URL
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` — your anon key
+   - `VITE_SUPABASE_PROJECT_ID` — your project reference
+
+4. Run migrations against your Supabase project (via Dashboard SQL editor or `supabase link` + `supabase db push`)
+
+5. Start the dev server:
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start Vite dev server on port 8080 |
+| `npm run build` | Production build |
+| `npm test` | Run unit tests (vitest) |
+| `npm test:e2e` | Run Playwright E2E tests |
+| `npm run lint` | ESLint check |
+| `npm run preview` | Preview production build |
+
+---
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_SUPABASE_URL` | Yes | Supabase project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Yes | Supabase anon key |
+| `VITE_SUPABASE_PROJECT_ID` | Yes | Supabase project reference |
+| `VITE_VAPID_PUBLIC_KEY` | No | Web push VAPID key (for push notifications) |
+| `RESEND_API_KEY` | No | Resend API key (for SMTP emails) |
 
 ---
 
 ## Project Structure
 
 ```
-/frontend
-  /components
-  /styles
-  /utils
-/backend
-  supabase-scripts.sql
-/manifest.json
-/service-worker.js
+src/
+├── components/       # UI components (shadcn + custom)
+│   ├── analytics/    # ProgressChart, AnalyticsDashboard
+│   ├── gamification/ # AchievementToast, LevelUpOverlay, XpProgress
+│   ├── illustrations/# SVG illustration components
+│   ├── quiz/         # QuizResults, QuizIntro, EditQuestionsDialog
+│   ├── room/         # Room settings, PulseTab, ForgeTab, DocumentCard, etc.
+│   └── ui/           # shadcn/ui primitives (button, dialog, select, etc.)
+├── contexts/         # AuthContext, ThemeContext
+├── hooks/            # useGamification, useOnlineStatus, usePushNotifications, etc.
+├── lib/              # Motion config, document parsing, PDF parsing
+├── pages/            # Route-level page components
+└── utils/            # Level/XP math, SM-2 recall, Pulse analytics, tests
 ```
 
 ---
 
-## Local Development
+## Security Model
 
-1. Create a Supabase project
-2. Run the SQL schema in `backend/supabase-scripts.sql`
-3. Configure Supabase keys in the frontend
-4. Serve the frontend using a local static server
-
----
-
-## Product Principles
-
-* Focus over feature bloat
-* Explicit rules over implicit behavior
-* Correctness and reliability over speed
-* Calm, human-centered UX
-
-Synapse is intentionally constrained. Every feature exists to support structured, room-based learning — nothing more.
+- **RLS on all tables** — Row-level security enforced at the Postgres level
+- **`questions_public` view** — Excludes `correct_answer` from pre-submission reads
+- **Server-side scoring** — `grade_quiz` and `award_xp` are SECURITY DEFINER RPCs
+- **Gamification protection** — `prevent_gamification_tampering` trigger blocks direct XP/level writes; only `award_xp` RPC (w/ `set_config` bypass) can modify these fields
+- **Room membership** — `join_room_by_code` RPC is the only insertion path; raw INSERT policy on `room_members` was dropped
+- **Rate limiting** — Edge functions use `check_rate_limit` RPC (configurable per-function window)
+- **CSP headers** — Configured in `vercel.json`
 
 ---
 

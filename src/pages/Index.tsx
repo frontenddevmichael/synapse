@@ -43,7 +43,14 @@ const Index = () => {
   // Avoid flashing landing markup while we redirect signed-in users
   if (loading || (user && !stayOnLanding)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background dot-grid" />
+      <div className="min-h-screen flex items-center justify-center bg-background dot-grid relative">
+        <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none">
+          <SynapsePatternBg className="w-full max-w-2xl" />
+        </div>
+        <div className="animate-pulse">
+          <Logo size="lg" />
+        </div>
+      </div>
     );
   }
 
@@ -83,7 +90,7 @@ const Index = () => {
             <motion.div variants={stagger}>
               <motion.h1
                 variants={fadeUp}
-                className="text-5xl sm:text-6xl lg:text-[7rem] font-black leading-[0.95] tracking-tighter mb-6 sm:mb-8"
+                className="text-5xl sm:text-6xl lg:text-[7rem] font-serif font-black leading-[0.95] tracking-tighter mb-6 sm:mb-8"
               >
                 STOP
                 <br />
@@ -103,7 +110,7 @@ const Index = () => {
                 <Button
                   size="lg"
                   onClick={() => navigate('/auth')}
-                  className="gap-2 h-12 sm:h-14 px-8 sm:px-10 text-sm sm:text-base font-black uppercase tracking-wider"
+                  className="gap-2 h-12 sm:h-14 px-8 sm:px-10 text-sm sm:text-base font-black uppercase tracking-wider hover:shadow-[0_0_24px_-4px_hsl(var(--copper)/0.5)] transition-shadow"
                 >
                   Get started <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
@@ -111,9 +118,9 @@ const Index = () => {
             </motion.div>
 
             {/* Hero illustration */}
-            <motion.div variants={fadeUp} className="hidden lg:block">
+            <div className="hidden lg:block synaptic-burst">
               <TransformIllustration className="w-full max-w-lg mx-auto" />
-            </motion.div>
+            </div>
           </div>
         </div>
       </motion.section>
@@ -129,7 +136,7 @@ const Index = () => {
         className="py-14 sm:py-20 lg:py-32 relative"
       >
         <div className="container max-w-5xl px-4 sm:px-8">
-          <motion.div variants={fadeUp} className="mb-12 sm:mb-20">
+          <motion.div variants={fadeUp} className="mb-12 sm:mb-20 relative">
             <p className="text-[4rem] sm:text-[6rem] lg:text-[8rem] font-black text-muted-foreground/[0.07] leading-none select-none absolute top-8 sm:top-12 left-4 sm:left-8 pointer-events-none">
               90s
             </p>
@@ -227,7 +234,7 @@ const Index = () => {
             <Button
               size="lg"
               onClick={() => navigate('/auth')}
-              className="gap-2 h-12 sm:h-14 px-8 sm:px-10 text-sm sm:text-base font-black uppercase tracking-wider"
+              className="gap-2 h-12 sm:h-14 px-8 sm:px-10 text-sm sm:text-base font-black uppercase tracking-wider hover:shadow-[0_0_24px_-4px_hsl(var(--copper)/0.5)] transition-shadow"
             >
               Start now — it's free <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
@@ -267,9 +274,9 @@ const ModeCard = ({
 }) => (
   <motion.div
     variants={fadeUp}
-    className={`p-5 sm:p-7 rounded-sm border-l-[3px] ${borderColor} bg-card hover:border-l-[5px] transition-all duration-200 hover:shadow-md`}
+    className={`p-5 sm:p-7 rounded-sm border-l-[3px] ${borderColor} bg-card hover:border-l-[5px] hover:-ml-[2px] transition-all duration-200 hover:shadow-md group`}
   >
-    <div className="mb-4">{illustration}</div>
+    <div className="mb-4 transition-transform duration-300 group-hover:scale-110">{illustration}</div>
     <h3 className="font-bold text-base sm:text-lg mb-1">{mode} mode</h3>
     <p className="text-primary/70 font-medium text-xs sm:text-sm mb-3">{nickname}</p>
     <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">{description}</p>

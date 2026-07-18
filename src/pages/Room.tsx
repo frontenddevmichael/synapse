@@ -8,6 +8,7 @@ import { CardCascadeIllustration } from '@/components/illustrations/CardCascadeI
 import { DocumentFunnelIllustration } from '@/components/illustrations/DocumentFunnelIllustration';
 import { ActivityFeed } from '@/components/room/ActivityFeed';
 import { PulseTab } from '@/components/room/PulseTab';
+import { RoomTriumph } from '@/components/room/RoomTriumph';
 import { ForgeTab } from '@/components/room/ForgeTab';
 import { UploadDocumentDialog } from '@/components/room/UploadDocumentDialog';
 import { ShareRoomDialog } from '@/components/room/ShareRoomDialog';
@@ -332,6 +333,9 @@ const RoomPage = () => {
 
   const modeBgClass = room.mode === 'study' ? 'mode-bg-study' : room.mode === 'challenge' ? 'mode-bg-challenge' : 'mode-bg-exam';
   const isOwner = user?.id === room.owner_id;
+  const currentMemberRole = members.find(m => m.user_id === user?.id)?.role;
+  const isAdmin = currentMemberRole === 'admin';
+  const canManage = isOwner || isAdmin;
 
   return (
     <div className="flex-1 flex flex-col bg-background dot-grid pb-14 lg:pb-0">
@@ -429,7 +433,7 @@ const RoomPage = () => {
                     <span className="sm:hidden">Rank</span>
                   </TabsTrigger>
                 )}
-                {isOwner && (
+                {canManage && (
                   <TabsTrigger value="pulse" className="gap-1.5 sm:gap-2 font-semibold min-h-[44px] text-xs sm:text-sm flex-1 sm:flex-none">
                     <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     Pulse
@@ -446,6 +450,8 @@ const RoomPage = () => {
                 )}
               </TabsList>
             </motion.div>
+
+            {canManage && <RoomTriumph roomId={room.id} isOwner={isOwner} />}
 
             {/* Quizzes Tab */}
             <TabsContent value="quizzes" className="space-y-6">
@@ -482,7 +488,7 @@ const RoomPage = () => {
               {quizzes.length === 0 ? (
                 <motion.div {...itemProps} className="bento-card py-16 flex flex-col items-center text-center">
                   <CardCascadeIllustration className="w-40 h-32 mb-4" />
-                  <h3 className="font-bold text-lg mb-1">No quizzes yet</h3>
+                  <h3 className="font-black text-lg mb-1">No quizzes yet</h3>
                   <p className="text-muted-foreground">Upload a document and generate your first quiz</p>
                 </motion.div>
               ) : (
@@ -496,7 +502,7 @@ const RoomPage = () => {
                       difficulty={quiz.difficulty}
                       timeLimitMinutes={quiz.time_limit_minutes}
                       mode={room.mode}
-                      canDelete={isOwner}
+                      canDelete={canManage}
                       delay={index * 0.05}
                       onDelete={handleDeleteQuiz}
                     />
@@ -510,7 +516,7 @@ const RoomPage = () => {
               {documents.length === 0 ? (
                 <motion.div {...itemProps} className="bento-card py-16 flex flex-col items-center text-center">
                   <DocumentFunnelIllustration className="w-40 h-32 mb-4" />
-                  <h3 className="font-bold text-lg mb-1">No documents yet</h3>
+                  <h3 className="font-black text-lg mb-1">No documents yet</h3>
                   <p className="text-muted-foreground mb-4">Upload your first study material</p>
                   <Button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="gap-2">
                     <Upload className="h-4 w-4" />
@@ -526,7 +532,7 @@ const RoomPage = () => {
                       name={doc.name}
                       content={doc.content}
                       createdAt={doc.created_at}
-                      canDelete={isOwner}
+                      canDelete={canManage}
                       delay={index * 0.05}
                       onDelete={handleDeleteDocument}
                     />

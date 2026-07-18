@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bookmark, Trash2 } from 'lucide-react';
+import { Bookmark, Trash2, StickyNote } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyDeckIllustration } from '@/components/illustrations/EmptyDeckIllustration';
 import { motion } from 'framer-motion';
@@ -36,6 +36,8 @@ const Bookmarks = () => {
   const [bookmarks, setBookmarks] = useState<BookmarkedQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [revealedAnswers, setRevealedAnswers] = useState<Set<string>>(new Set());
+  const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
+  const [savingNotes, setSavingNotes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) return;
@@ -87,6 +89,21 @@ const Bookmarks = () => {
     });
   };
 
+  const handleSaveNotes = async (bookmarkId: string) => {
+    setSavingNotes(prev => new Set(prev).add(bookmarkId));
+    const { error } = await supabase.from('bookmarked_questions').update({ notes: editingNotes[bookmarkId] || null }).eq('id', bookmarkId);
+    if (error) toast({ title: 'Failed to save notes', variant: 'destructive' });
+    else {
+      setBookmarks(prev => prev.map(b => b.id === bookmarkId ? { ...b, notes: editingNotes[bookmarkId] || null } : b));
+      toast({ title: 'Notes saved' });
+    }
+    setSavingNotes(prev => { const next = new Set(prev); next.delete(bookmarkId); return next; });
+  };
+
+  const startEditingNotes = (bookmarkId: string, currentNotes: string | null) => {
+    setEditingNotes(prev => ({ ...prev, [bookmarkId]: currentNotes || '' }));
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col bg-background dot-grid pb-14 lg:pb-0">
@@ -123,7 +140,7 @@ const Bookmarks = () => {
           {bookmarks.length === 0 ? (
             <motion.div variants={fadeUp} className="bento-card py-12 sm:py-16 flex flex-col items-center text-center">
               <EmptyDeckIllustration className="w-40 h-32 mb-3 sm:mb-4" />
-              <h3 className="font-bold text-base sm:text-lg mb-1">Your deck is empty</h3>
+              <h3 className="font-black text-base sm:text-lg mb-1">Your deck is empty</h3>
               <p className="text-sm text-muted-foreground mb-4">Bookmark questions during quizzes to build your personal review deck</p>
               <Button onClick={() => navigate('/dashboard')} className="font-semibold">Browse rooms</Button>
             </motion.div>
@@ -192,6 +209,42 @@ const Bookmarks = () => {
                         {bookmark.question.explanation}
                       </div>
                     )}
+
+                    {/* Notes */}
+                    <div className="mt-3 sm:mt-4">
+                      {editingNotes[bookmark.id] !== undefined ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={editingNotes[bookmark.id]}
+                            onChange={(e) => setEditingNotes(prev => ({ ...prev, [bookmark.id]: e.target.value }))}
+                            placeholder="Add your notes here..."
+                            rows={3}
+                            className="w-full rounded-lg border border-border/30 bg-background p-2.5 text-xs sm:text-sm resize-y min-h-[60px] focus:outline-none focus:ring-1 focus:ring-primary"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="default" onClick={() => handleSaveNotes(bookmark.id)} disabled={savingNotes.has(bookmark.id)} className="h-8 text-xs font-semibold gap-1 min-h-[36px]">
+                              {savingNotes.has(bookmark.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                              Save Notes
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingNotes(prev => { const next = { ...prev }; delete next[bookmark.id]; return next; })} className="h-8 text-xs min-h-[36px]">
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => startEditingNotes(bookmark.id, bookmark.notes)}
+                          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+                        >
+                          <StickyNote className="h-3.5 w-3.5" />
+                          {bookmark.notes ? (
+                            <span className="text-left line-clamp-2">{bookmark.notes}</span>
+                          ) : (
+                            <span>Add notes...</span>
+                          )}
+                        </button>
+                      )}
+                    </div>
                   </motion.div>
                 );
               })}

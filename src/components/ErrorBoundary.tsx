@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   children: React.ReactNode;
@@ -23,6 +24,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught:', error, errorInfo);
+    supabase.from('error_logs').insert({
+      error_message: error.message,
+      error_stack: error.stack,
+      component_stack: errorInfo.componentStack,
+      url: window.location.href,
+      user_agent: navigator.userAgent,
+    }).then(() => {}).catch(() => {});
   }
 
   handleRetry = () => {
@@ -38,7 +46,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
               <AlertTriangle className="h-8 w-8 text-destructive" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-foreground mb-2">Something went wrong</h1>
+              <h1 className="text-xl font-bold text-foreground mb-2">Something went wrong</h1>
               <p className="text-sm text-muted-foreground">
                 An unexpected error occurred. Try refreshing the page.
               </p>

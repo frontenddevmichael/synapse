@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Trash2, UserMinus, BookOpen, Trophy, FileText, Pencil } from 'lucide-react';
+import { Settings, Trash2, UserMinus, BookOpen, Trophy, FileText, Pencil, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,9 +42,28 @@ export function RoomSettings({
   const [currentName, setCurrentName] = useState(roomName);
   const [leaderboard, setLeaderboard] = useState(leaderboardEnabled);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRegeneratingCode, setIsRegeneratingCode] = useState(false);
   const isOwner = currentUserId === ownerId;
 
   if (!isOwner) return null;
+
+  const generateRoomCode = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  };
+
+  const handleRegenerateCode = async () => {
+    setIsRegeneratingCode(true);
+    const newCode = generateRoomCode();
+    const { error } = await supabase.from('rooms').update({ code: newCode }).eq('id', roomId);
+    if (error) {
+      toast({ title: 'Failed to regenerate code', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Room code updated', description: `New code: ${newCode}` });
+      onUpdate();
+    }
+    setIsRegeneratingCode(false);
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -131,6 +150,17 @@ export function RoomSettings({
               checked={leaderboard}
               onCheckedChange={setLeaderboard}
             />
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30">
+            <div>
+              <p className="text-sm font-medium">Room Code</p>
+              <p className="text-xs text-muted-foreground">Share this code for others to join</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleRegenerateCode} disabled={isRegeneratingCode} className="gap-1.5">
+              <RefreshCw className={`h-3.5 w-3.5 ${isRegeneratingCode ? 'animate-spin' : ''}`} />
+              Regenerate
+            </Button>
           </div>
 
           <Button onClick={handleSave} disabled={isSaving} className="w-full">

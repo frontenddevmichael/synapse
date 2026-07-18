@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files with secrets
+.env
+
+# Test output
+test-results/
+
+# Internal docs (not needed for deployment)
+Build.md
+GAP_REPORT.md
+RECONCILIATION_REPORT.md

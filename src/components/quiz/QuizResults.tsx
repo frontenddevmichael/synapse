@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, Lock, Share2, Star, XCircle, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -9,13 +9,13 @@ import { cn } from '@/lib/utils';
 import { AnimatedScore } from '@/components/quiz/AnimatedScore';
 import { PersonalBest } from '@/components/quiz/PersonalBest';
 import { RetryMistakesButton } from '@/components/quiz/RetryMistakesButton';
+import { SynapsePatternBg } from '@/components/illustrations/SynapsePatternBg';
 import { fadeUp, stagger } from '@/lib/motion';
 
 interface Question {
   id: string;
   question_text: string;
   options: string[];
-  correct_answer: string;
   explanation: string | null;
 }
 
@@ -23,6 +23,7 @@ interface QuizResultsProps {
   score: number;
   questions: Question[];
   answers: Record<string, string>;
+  correctAnswers: Record<string, { correct_answer: string; explanation: string | null }>;
   previousBestScore: number | null;
   xpEarned: number | null;
   leveledUp: boolean;
@@ -34,13 +35,22 @@ interface QuizResultsProps {
 }
 
 function QuizResultsImpl({
-  score, questions, answers, previousBestScore, xpEarned, leveledUp, newLevel,
+  score, questions, answers, correctAnswers, previousBestScore, xpEarned, leveledUp, newLevel,
   shouldShowAnswerReview, modeBackground, onRetryMistakes, onShareScore,
 }: QuizResultsProps) {
   const navigate = useNavigate();
-  const correctCount = questions.filter(q => answers[q.id] === q.correct_answer).length;
+  const correctCount = questions.filter(q => correctAnswers[q.id] && answers[q.id] === correctAnswers[q.id].correct_answer).length;
   const incorrectCount = questions.length - correctCount;
   const isNewBest = previousBestScore !== null && score >= previousBestScore;
+  const isPerfect = score === 100;
+  const [burstPlayed, setBurstPlayed] = useState(false);
+
+  useEffect(() => {
+    if (isPerfect && !burstPlayed) {
+      const timer = setTimeout(() => setBurstPlayed(true), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isPerfect, burstPlayed]);
 
   return (
     <div className={`min-h-screen flex flex-col bg-background dot-grid ${modeBackground}`}>
@@ -55,7 +65,13 @@ function QuizResultsImpl({
       </header>
       <main className="flex-1 container max-w-3xl py-6 sm:py-8 px-4">
         <motion.div variants={stagger} initial="hidden" animate="visible">
-          <motion.div variants={fadeUp} className="rounded-sm border border-border/50 bg-card p-6 sm:p-8 lg:p-12 mb-6 sm:mb-8 text-center shadow-lg">
+          <motion.div variants={fadeUp} className="relative rounded-sm border border-border/50 bg-card p-6 sm:p-8 lg:p-12 mb-6 sm:mb-8 text-center shadow-lg overflow-hidden">
+            {isPerfect && (
+              <div className={`absolute inset-0 pointer-events-none ${burstPlayed ? 'synaptic-burst' : 'opacity-0'}`}>
+                <div className="absolute inset-0 bg-primary/5" />
+                <SynapsePatternBg className="absolute inset-0 w-full h-full opacity-30 scale-150" />
+              </div>
+            )}
             <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3 sm:mb-4">Quiz Complete</p>
             <div className="text-6xl sm:text-7xl lg:text-8xl font-black tracking-tighter mb-3 sm:mb-4 text-electric">
               <AnimatedScore score={score} />
@@ -73,9 +89,9 @@ function QuizResultsImpl({
                   +{xpEarned} XP
                 </div>
                 {leveledUp && newLevel && (
-                  <div className="flex items-center gap-2 text-gold font-bold animate-count-up gold-shimmer">
-                    <Star className="h-5 w-5" />
-                    Level {newLevel}!
+                  <div className="flex items-center gap-2 font-bold animate-count-up copper-flash rounded-lg px-3 py-1">
+                    <Star className="h-5 w-5 text-copper" />
+                    <span className="text-copper">Level {newLevel}!</span>
                   </div>
                 )}
               </div>
@@ -96,7 +112,8 @@ function QuizResultsImpl({
               <h2 className="text-xl sm:text-2xl font-black tracking-tight">Review</h2>
               {questions.map((question, index) => {
                 const userAnswer = answers[question.id];
-                const isCorrect = userAnswer === question.correct_answer;
+                const qa = correctAnswers[question.id];
+                const isCorrect = qa && userAnswer === qa.correct_answer;
                 return (
                   <div key={question.id} className="rounded-sm border border-border/50 bg-card p-4 sm:p-6">
                     <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
@@ -108,18 +125,18 @@ function QuizResultsImpl({
                     <div className="space-y-2 sm:ml-10">
                       {question.options.map((option) => (
                         <div key={option} className={cn('p-2.5 sm:p-3 rounded-lg border transition-all text-sm',
-                          option === question.correct_answer && 'bg-success/10 border-success/30',
-                          option === userAnswer && option !== question.correct_answer && 'bg-destructive/10 border-destructive/30',
-                          option !== userAnswer && option !== question.correct_answer && 'border-border/30'
+                          qa && option === qa.correct_answer && 'bg-success/10 border-success/30',
+                          qa && option === userAnswer && option !== qa.correct_answer && 'bg-destructive/10 border-destructive/30',
+                          (!qa || option !== userAnswer) && option !== (qa?.correct_answer ?? '') && 'border-border/30'
                         )}>
                           {option}
-                          {option === question.correct_answer && <span className="ml-2 text-success text-xs sm:text-sm font-medium">(Correct)</span>}
-                          {option === userAnswer && option !== question.correct_answer && <span className="ml-2 text-destructive text-xs sm:text-sm font-medium">(Your answer)</span>}
+                          {qa && option === qa.correct_answer && <span className="ml-2 text-success text-xs sm:text-sm font-medium">(Correct)</span>}
+                          {qa && option === userAnswer && option !== qa.correct_answer && <span className="ml-2 text-destructive text-xs sm:text-sm font-medium">(Your answer)</span>}
                         </div>
                       ))}
-                      {question.explanation && (
+                      {(qa?.explanation || question.explanation) && (
                         <div className="mt-2 sm:mt-3 p-3 sm:p-4 bg-muted/50 rounded-lg sm:rounded-xl text-xs sm:text-sm text-muted-foreground">
-                          <span className="font-bold text-foreground">Explanation: </span>{question.explanation}
+                          <span className="font-bold text-foreground">Explanation: </span>{qa?.explanation || question.explanation}
                         </div>
                       )}
                     </div>

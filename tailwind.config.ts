@@ -47,10 +47,14 @@ export default {
   				DEFAULT: 'hsl(var(--warning))',
   				foreground: 'hsl(var(--warning-foreground))'
   			},
-  			gold: {
-  				DEFAULT: 'hsl(var(--gold))',
-  				foreground: 'hsl(var(--gold-foreground))'
-  			},
+			gold: {
+				DEFAULT: 'hsl(var(--gold))',
+				foreground: 'hsl(var(--gold-foreground))'
+			},
+			copper: {
+				DEFAULT: 'hsl(var(--copper))',
+				foreground: 'hsl(var(--copper-foreground))'
+			},
   			popover: {
   				DEFAULT: 'hsl(var(--popover))',
   				foreground: 'hsl(var(--popover-foreground))'
