@@ -1,5 +1,5 @@
 export interface AIConfig {
-  provider: 'openai' | 'groq';
+  provider: 'openai' | 'groq' | 'gemini';
   apiKey: string;
   baseUrl?: string;
   model?: string;
@@ -26,11 +26,13 @@ export interface GenerateQuizResponse {
 const DEFAULT_MODELS: Record<string, string> = {
   openai: 'gpt-4o-mini',
   groq: 'llama-3.1-70b-versatile',
+  gemini: 'gemini-2.0-flash',
 };
 
 const BASE_URLS: Record<string, string> = {
   openai: 'https://api.openai.com/v1',
   groq: 'https://api.groq.com/openai/v1',
+  gemini: 'https://generativelanguage.googleapis.com/v1beta',
 };
 
 export function getAIConfig(): AIConfig {
@@ -75,6 +77,53 @@ export async function callAI(
   systemPrompt: string,
   userPrompt: string
 ): Promise<string> {
+  if (config.provider === 'gemini') {
+    return callGemini(config, systemPrompt, userPrompt);
+  }
+  return callOpenAICompatible(config, systemPrompt, userPrompt);
+}
+
+async function callGemini(
+  config: AIConfig,
+  systemPrompt: string,
+  userPrompt: string
+): Promise<string> {
+  const url = `${config.baseUrl}/models/${config.model}:generateContent?key=${config.apiKey}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 4096,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const status = response.status;
+    if (status === 429) throw new Error('RATE_LIMIT');
+    if (status === 402) throw new Error('CREDITS_EXHAUSTED');
+    const errorText = await response.text();
+    console.error(`Gemini API error (${status}):`, errorText);
+    throw new Error('AI_API_ERROR');
+  }
+
+  const data = await response.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+async function callOpenAICompatible(
+  config: AIConfig,
+  systemPrompt: string,
+  userPrompt: string
+): Promise<string> {
   const response = await fetch(`${config.baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -93,12 +142,8 @@ export async function callAI(
 
   if (!response.ok) {
     const status = response.status;
-    if (status === 429) {
-      throw new Error('RATE_LIMIT');
-    }
-    if (status === 402) {
-      throw new Error('CREDITS_EXHAUSTED');
-    }
+    if (status === 429) throw new Error('RATE_LIMIT');
+    if (status === 402) throw new Error('CREDITS_EXHAUSTED');
     const errorText = await response.text();
     console.error(`AI API error (${status}):`, errorText);
     throw new Error('AI_API_ERROR');
