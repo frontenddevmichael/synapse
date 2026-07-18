@@ -25,8 +25,16 @@ serve(async (req) => {
   }
 
   try {
-    // JWT verified by gateway (verify_jwt = true in config.toml)
-    const userId = req.headers.get('x-supabase-auth-uid');
+    // Extract user ID from JWT (gateway verifies JWT when verify_jwt = true)
+    const authHeader = req.headers.get('Authorization') || '';
+    const token = authHeader.replace('Bearer ', '');
+    let userId = req.headers.get('x-supabase-auth-uid') || '';
+    if (!userId && token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        userId = payload.sub || '';
+      } catch { /* fall through */ }
+    }
     if (!userId) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
@@ -37,7 +45,7 @@ serve(async (req) => {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+      { global: { headers: { Authorization: authHeader } } }
     );
 
     const body = await req.json();
