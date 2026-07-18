@@ -1,6 +1,5 @@
 import { ArrowLeft, LogOut, Home, User as UserIcon, Settings, MailCheck } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,18 +12,29 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface PageHeaderProps {
   backTo?: string;
-  showBackOnMobile?: boolean;
+  title?: string;
   actions?: React.ReactNode;
 }
 
-export function PageHeader({ backTo, showBackOnMobile = false, actions }: PageHeaderProps) {
+const routeTitles: Record<string, string> = {
+  '/dashboard': 'Rooms',
+  '/recall': 'Recall',
+  '/bookmarks': 'Deck',
+  '/profile': 'Profile',
+  '/preferences': 'Settings',
+};
+
+export function PageHeader({ backTo, title, actions }: PageHeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut, resendConfirmation } = useAuth();
   const { toast } = useToast();
+
+  const pageTitle = title || routeTitles[location.pathname] || '';
 
   const initial = (user?.user_metadata?.username || user?.email || '?')
     .toString()
@@ -45,30 +55,26 @@ export function PageHeader({ backTo, showBackOnMobile = false, actions }: PageHe
     else toast({ title: 'Confirmation email sent', description: 'Check your inbox.' });
   };
 
-  const onAuthRoute = location.pathname === '/profile' || location.pathname === '/preferences';
-
   return (
-    <header className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-40">
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-        {showBackOnMobile && backTo && (
+    <header className="lg:hidden flex items-center justify-between px-4 h-12 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-40 gap-2">
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        {backTo && (
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate(backTo)}
-            className="min-h-[44px] min-w-[44px] sm:hidden"
+            className="h-8 w-8 shrink-0"
             aria-label="Back"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
         )}
-        <button onClick={() => navigate('/dashboard')} className="lg:hidden shrink-0" aria-label="Dashboard">
-          <Logo />
-        </button>
-        {/* Spacer on desktop since DesktopNav already shows the brand */}
-        <div className="hidden lg:block" />
+        {pageTitle && (
+          <h1 className="text-sm font-semibold truncate">{pageTitle}</h1>
+        )}
       </div>
 
-      <div className="flex items-center gap-1 sm:gap-2">
+      <div className="flex items-center gap-1 shrink-0">
         {actions}
         <ThemeToggle />
         <DropdownMenu>
@@ -76,10 +82,10 @@ export function PageHeader({ backTo, showBackOnMobile = false, actions }: PageHe
             <Button
               variant="ghost"
               size="icon"
-              className="min-h-[40px] min-w-[40px] rounded-full"
+              className="h-8 w-8 rounded-full"
               aria-label="Account menu"
             >
-              <span className="h-8 w-8 rounded-full bg-primary/15 text-primary font-bold text-sm flex items-center justify-center">
+              <span className="h-7 w-7 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center">
                 {initial}
               </span>
             </Button>
@@ -108,10 +114,10 @@ export function PageHeader({ backTo, showBackOnMobile = false, actions }: PageHe
             <DropdownMenuItem onClick={() => navigate('/?landing=1')}>
               <Home className="h-4 w-4 mr-2" /> Home
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/profile')} disabled={onAuthRoute && location.pathname === '/profile'}>
+            <DropdownMenuItem onClick={() => navigate('/profile')}>
               <UserIcon className="h-4 w-4 mr-2" /> Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/preferences')} disabled={onAuthRoute && location.pathname === '/preferences'}>
+            <DropdownMenuItem onClick={() => navigate('/preferences')}>
               <Settings className="h-4 w-4 mr-2" /> Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />

@@ -11,7 +11,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { AuthenticatedLayout } from "@/components/AuthenticatedLayout";
+import { AuthenticatedLayout, type AuthenticatedLayoutProps } from "@/components/AuthenticatedLayout";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { OfflineBanner } from "@/components/OfflineBanner";
 
@@ -62,10 +62,10 @@ function PageTransition({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ProtectedPage({ children }: { children: React.ReactNode }) {
+function ProtectedPage({ children, ...layoutProps }: { children: React.ReactNode } & Partial<AuthenticatedLayoutProps>) {
   return (
     <ProtectedRoute>
-      <AuthenticatedLayout>{children}</AuthenticatedLayout>
+      <AuthenticatedLayout {...layoutProps}>{children}</AuthenticatedLayout>
     </ProtectedRoute>
   );
 }

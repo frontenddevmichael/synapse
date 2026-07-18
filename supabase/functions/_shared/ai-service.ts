@@ -25,7 +25,7 @@ export interface GenerateQuizResponse {
 
 const DEFAULT_MODELS: Record<string, string> = {
   openai: 'gpt-4o-mini',
-  groq: 'llama-3.1-70b-versatile',
+  groq: 'llama-3.3-70b-versatile',
   gemini: 'gemini-2.0-flash',
 };
 
@@ -90,24 +90,36 @@ async function callGemini(
 ): Promise<string> {
   const url = `${config.baseUrl}/models/${config.model}:generateContent?key=${config.apiKey}`;
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
+  const maxRetries = 3;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 4096,
         },
-      ],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 4096,
-      },
-    }),
-  });
+      }),
+    });
 
-  if (!response.ok) {
+    if (response.ok) {
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    }
+
     const status = response.status;
+    if (status === 429 && attempt < maxRetries) {
+      const delay = Math.pow(2, attempt) * 1000;
+      console.log(`Gemini rate limited, retrying in ${delay}ms...`);
+      await new Promise(r => setTimeout(r, delay));
+      continue;
+    }
     if (status === 429) throw new Error('RATE_LIMIT');
     if (status === 402) throw new Error('CREDITS_EXHAUSTED');
     const errorText = await response.text();
@@ -115,8 +127,7 @@ async function callGemini(
     throw new Error('AI_API_ERROR');
   }
 
-  const data = await response.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  throw new Error('RATE_LIMIT');
 }
 
 async function callOpenAICompatible(
