@@ -42,8 +42,6 @@ self.addEventListener('fetch', (event) => {
   // Only handle same-origin or whitelisted CDN/font requests
   const sameOrigin = url.origin === self.location.origin;
   const allowedExternal =
-    url.hostname.includes('fonts.googleapis.com') ||
-    url.hostname.includes('fonts.gstatic.com') ||
     url.hostname.includes('cdnjs.cloudflare.com');
   if (!sameOrigin && !allowedExternal) return;
 
