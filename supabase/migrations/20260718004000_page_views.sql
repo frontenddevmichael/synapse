@@ -11,7 +11,7 @@ ALTER TABLE public.page_views ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can insert own page views" ON public.page_views
   FOR INSERT
-  WITH CHECK (auth.uid() = user_id OR (auth.uid() IS NULL AND user_id IS NULL));
+  WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
 
 CREATE POLICY "Users can view own page views" ON public.page_views
   FOR SELECT
